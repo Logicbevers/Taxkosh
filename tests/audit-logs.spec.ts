@@ -9,6 +9,7 @@ test.describe('Audit Logging Verification', () => {
 
         const adminContext = await browser.newContext();
         const adminPage = await adminContext.newPage();
+        adminPage.on('console', msg => console.log('ADMIN BROWSER:', msg.text()));
 
         // 1. Register/Verify/Promote Admin
         await adminPage.goto('http://localhost:3000/register');
@@ -43,6 +44,7 @@ test.describe('Audit Logging Verification', () => {
         // 2. USER Journey
         const userContext = await browser.newContext();
         const userPage = await userContext.newPage();
+        userPage.on('console', msg => console.log('USER BROWSER:', msg.text()));
 
         await userPage.goto('http://localhost:3000/register');
         await userPage.getByLabel('Full Name').fill('Audit User');
@@ -72,6 +74,10 @@ test.describe('Audit Logging Verification', () => {
             return data;
         }, userEmail);
 
+        if (seedData.error) {
+            throw new Error(`Data seeding failed: ${seedData.error}`);
+        }
+
         // Login User
         await userPage.goto('http://localhost:3000/login');
         await userPage.fill('#login-email', userEmail);
@@ -82,14 +88,15 @@ test.describe('Audit Logging Verification', () => {
         // Action B: View a Document (Trigger Log)
         console.log('Triggering DOCUMENT_VIEW for id:', seedData.docId);
         await userPage.evaluate(async (id) => {
-            const vRes = await fetch(`/api/documents/${id}/view`);
+            // Use manual redirect to avoid CSP issues with the fallback URL in tests
+            const vRes = await fetch(`/api/documents/${id}/view`, { redirect: 'manual' });
             console.log('View API status:', vRes.status);
         }, seedData.docId);
 
         // Action C: Submit ITR (Trigger Log)
         console.log('Triggering ITR_SUBMISSION');
         await userPage.evaluate(async () => {
-            const sRes = await fetch('/api/itr/submit', { method: 'POST' });
+            const sRes = await fetch('/api/itr/submit', { method: 'POST', redirect: 'manual' });
             console.log('ITR Submission API status:', sRes.status);
         });
 

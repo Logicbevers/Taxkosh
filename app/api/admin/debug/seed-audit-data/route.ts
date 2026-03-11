@@ -13,23 +13,33 @@ export async function POST(req: Request) {
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
+        // Clean up any existing test documents for this user to avoid conflicts
+        await prisma.document.deleteMany({ where: { userId: user.id } });
+
         // Seed a Document
-        // Required fields: userId, fileName, fileSize, documentType
         const doc = await prisma.document.create({
             data: {
                 userId: user.id,
                 fileName: "Audit_Test_Doc.pdf",
                 fileSize: 1024,
                 documentType: DocumentType.OTHER,
-                s3Key: "test-audit-key-123"
+                s3Key: `audit-s3-${user.id.slice(-4)}-${Date.now()}`
             }
         });
 
-        // Seed a TaxReturn draft
-        // Required fields: userId
-        // Note: Assessment year defaults to 2025-26 in schema
-        const taxReturn = await prisma.taxReturn.create({
-            data: {
+        // Seed a TaxReturn draft using upsert
+        const taxReturn = await prisma.taxReturn.upsert({
+            where: {
+                userId_assessmentYear: {
+                    userId: user.id,
+                    assessmentYear: "2025-26"
+                }
+            },
+            update: {
+                status: "DRAFT",
+                incomeData: {}
+            },
+            create: {
                 userId: user.id,
                 assessmentYear: "2025-26",
                 status: "DRAFT",

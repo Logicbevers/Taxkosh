@@ -46,6 +46,18 @@ test.describe('TDS Module - Business Workflow', () => {
 
         // Wait for dashboard
         await expect(page).toHaveURL(/.*dashboard(\/business)?/, { timeout: 15000 });
+
+        // Log any API failures to debug tests
+        page.on('response', async (res) => {
+            if (!res.ok() && res.url().includes('/api/')) {
+                console.error(`API Error on ${res.url()}: ${res.status()}`);
+                try {
+                    console.error("Response body:", await res.json());
+                } catch (e) {
+                    console.error("Could not parse error response body");
+                }
+            }
+        });
     });
 
     test('TC-TDS-01: Create Deductee', async ({ page }) => {
@@ -87,6 +99,10 @@ test.describe('TDS Module - Business Workflow', () => {
                 body: JSON.stringify({ financialYear: '2024-25', quarter: 4, formType: 'FORM_26Q' })
             });
             const data = await res.json();
+            if (!res.ok) {
+                console.error("Failed to create return:", data);
+                throw new Error(`Failed to create return: ${data.error}`);
+            }
             return data.id;
         });
 
@@ -101,7 +117,7 @@ test.describe('TDS Module - Business Workflow', () => {
 
         // Section Code 194C
         await page.click('button:has(span:text("194C"))');
-        await page.click('div[role="option"]:has-text("Contract Payments (194C)")');
+        await page.click('div[role="option"]:has-text("Contractors (194C)")');
 
         await page.fill('input[name="dateOfPayment"]', '2025-03-01');
         await page.fill('input[name="amountPaid"]', '50000');
@@ -123,6 +139,10 @@ test.describe('TDS Module - Business Workflow', () => {
                 body: JSON.stringify({ financialYear: '2024-25', quarter: 4, formType: 'FORM_26Q' })
             });
             const data = await res.json();
+            if (!res.ok) {
+                console.error("Failed to create return:", data);
+                throw new Error(`Failed to create return: ${data.error}`);
+            }
             return data.id;
         });
 
