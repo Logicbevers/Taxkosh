@@ -1,0 +1,25 @@
+﻿
+> taxkosh@0.1.0 dev
+> next dev 3001
+
+node.exe : Invalid project 
+directory provided, no such 
+directory: C:\Users\dell\.ge
+mini\antigravity\scratch\Tax
+Kosh2.0\taxkosh\3001
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (Inval  
+  id project....0\taxkosh   
+ \3001:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 

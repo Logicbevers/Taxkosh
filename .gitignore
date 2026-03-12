@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch / debug output files
+tmp.txt
+tmp_output.txt
+errors.txt
+ts-errors.txt
+tsc-errors.txt
+tsc_ascii.txt
+tsc_clean.txt
+tsc_output.txt

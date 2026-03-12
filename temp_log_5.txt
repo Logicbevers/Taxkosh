@@ -1,0 +1,100 @@
+﻿+ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~
+    + CategoryInfo          : Not 
+   Specified: ([1A[2K[chromi..  
+  .aft & Add Entry:String) [],    
+ RemoteException
+    + FullyQualifiedErrorId : Nat 
+   iveCommandError
+ 
+API Error on http://localhost:3000
+/api/tds/returns/cmmm7mgdl002i9cwp
+yb1lgaj7: 500
+
+[1A[2KResponse body: {
+  error: [32m'Internal server 
+error'[39m,
+  details: [32m'\n'[39m +
+    [32m'Invalid `__TURBOPACK__im
+ported__module__$5b$project$5d2f2e
+$gemini$2f$antigravity$2f$scratch$
+2f$TaxKosh2$2e$0$2f$taxkosh$2f$lib
+$2f$prisma$2e$ts__$5b$app$2d$route
+$5d$__$28$ecmascript$29$__["prisma
+"].tdsEntry.create()` invocation 
+in\n'[39m +
+    [32m'C:\\Users\\dell\\.gemini
+\\antigravity\\scratch\\TaxKosh2.0
+\\taxkosh\\.next\\dev\\server\\chu
+nks\\[root-of-the-server]__32d091c
+3._.js:428:230\n'[39m +
+    [32m'\n'[39m +
+
+    [32m'  425     status: 
+400\n'[39m +
+    [32m'  426 });\n'[39m +
+    [32m'  427 const calc = (0, _
+_TURBOPACK__imported__module__$5b$
+project$5d2f2e$gemini$2f$antigravi
+ty$2f$scratch$2f$TaxKosh2$2e$0$2f$
+taxkosh$2f$lib$2f$tds$2e$ts__$5b$a
+pp$2d$route$5d$__$28$ecmascript$29
+$__["calculateTds"])(amountPaid, 
+tdsRate, deductee.category === 
+"COMPANY");\n'[39m +
+    [32m'ΓåÆ 428 const entry = 
+await __TURBOPACK__imported__modul
+e__$5b$project$5d2f2e$gemini$2f$an
+tigravity$2f$scratch$2f$TaxKosh2$2
+e$0$2f$taxkosh$2f$lib$2f$prisma$2e
+$ts__$5b$app$2d$route$5d$__$28$ecm
+ascript$29$__["prisma"].tdsEntry.c
+reate({\n'[39m +
+    [32m'        data: {\n'[39m 
++
+    [32m'          returnId: 
+undefined,\n'[39m +
+    [32m'          deducteeId: "c
+mmm7mgd5002g9cwpl7hwmj6l",\n'[39m
+ +
+    [32m'          sectionCode: 
+"194C",\n'[39m +
+    [32m'          
+dateOfPayment: new Date("2025-03-0
+1T00:00:00.000Z"),\n'[39m +
+    [32m'          amountPaid: 
+50000,\n'[39m +
+    [32m'          tdsRate: 
+1,\n'[39m +
+    [32m'          tdsAmount: 
+500,\n'[39m +
+    [32m'          surcharge: 
+0,\n'[39m +
+    [32m'          
+educationCess: 20,\n'[39m +
+    [32m'          totalTds: 
+520,\n'[39m +
+    [32m'      +   deductee: 
+{\n'[39m +
+    [32m'      +     create: TdsD
+educteeCreateWithoutEntriesInput 
+| TdsDeducteeUncheckedCreateWithou
+tEntriesInput,\n'[39m +
+    [32m'      +     
+connectOrCreate: TdsDeducteeCreate
+OrConnectWithoutEntriesInput,\n'[
+39m +
+    [32m'      +     connect: Tds
+DeducteeWhereUniqueInput\n'[39m +
+    [32m'      +   }\n'[39m +
+    [32m'        }\n'[39m +
+    [32m'      })\n'[39m +
+    [32m'\n'[39m +
+    [32m'Argument `deductee` is 
+missing.'[39m
+}

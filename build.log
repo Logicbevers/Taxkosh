@@ -1,0 +1,117 @@
+﻿
+> taxkosh@0.1.0 build
+> next build
+
+node.exe : ΓÜá Warning: 
+Next.js inferred your 
+workspace root, but it may 
+not be correct.
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
+    + CategoryInfo          
+    : NotSpecified: (ΓÜá W  
+  arning: Ne...not be cor   
+ rect.:String) [], Remot    
+eException
+    + FullyQualifiedErrorId 
+    : NativeCommandError
+ 
+ We detected multiple 
+lockfiles and selected the 
+directory of C:\Users\dell\p
+ackage-lock.json as the 
+root directory.
+ To silence this warning, 
+set `turbopack.root` in 
+your Next.js config, or 
+consider removing one of 
+the lockfiles if it's not 
+needed.
+   See https://nextjs.org/do
+cs/app/api-reference/config/
+next-config-js/turbopack#roo
+t-directory for more 
+information.
+ Detected additional 
+lockfiles: 
+   * C:\Users\dell\.gemini\a
+ntigravity\scratch\TaxKosh2.
+0\taxkosh\package-lock.json
+
+Γû▓ Next.js 16.1.6 (Turbopack)
+- Environments: .env.local, .env
+
+ΓÜá The "middleware" file 
+convention is deprecated. 
+Please use "proxy" instead. 
+Learn more: https://nextjs.o
+rg/docs/messages/middleware-
+to-proxy
+  Creating an optimized production build ...
+Γ£ô Compiled successfully in 16.9s
+  Running TypeScript ...
+  Collecting page data using 7 workers ...
+  Generating static pages using 7 workers (0/36) ...
+  Generating static pages using 7 workers (9/36) 
+  Generating static pages using 7 workers (18/36) 
+  Generating static pages using 7 workers (27/36) 
+Γ£ô Generating static pages using 7 workers (36/36) in 2.0s
+  Finalizing page optimization ...
+
+Route (app)
+Γöî Γùï /
+Γö£ Γùï /_not-found
+Γö£ ╞Æ /api/admin/services
+Γö£ ╞Æ /api/admin/services/[id]/assign
+Γö£ ╞Æ /api/admin/services/[id]/clarification
+Γö£ ╞Æ /api/admin/services/[id]/file
+Γö£ ╞Æ /api/admin/services/[id]/notes
+Γö£ ╞Æ /api/auth/[...nextauth]
+Γö£ ╞Æ /api/documents
+Γö£ ╞Æ /api/documents/[id]/view
+Γö£ ╞Æ /api/documents/upload
+Γö£ ╞Æ /api/forgot-password
+Γö£ ╞Æ /api/gst/invoices
+Γö£ ╞Æ /api/gst/profile
+Γö£ ╞Æ /api/gst/summary
+Γö£ ╞Æ /api/itr/latest
+Γö£ ╞Æ /api/itr/save
+Γö£ ╞Æ /api/itr/submit
+Γö£ ╞Æ /api/payments/razorpay/create-order
+Γö£ ╞Æ /api/payments/razorpay/webhook
+Γö£ ╞Æ /api/register
+Γö£ ╞Æ /api/reset-password
+Γö£ ╞Æ /api/services/request
+Γö£ ╞Æ /api/services/request/[id]/status
+Γö£ ╞Æ /api/verify-email
+Γö£ ╞Æ /dashboard
+Γö£ ╞Æ /dashboard/admin
+Γö£ ╞Æ /dashboard/admin/services
+Γö£ ╞Æ /dashboard/admin/services/[id]
+Γö£ ╞Æ /dashboard/business
+Γö£ Γùï /dashboard/business/profile
+Γö£ Γùï /dashboard/business/purchases
+Γö£ Γùï /dashboard/business/returns
+Γö£ Γùï /dashboard/business/sales
+Γö£ ╞Æ /dashboard/ca
+Γö£ ╞Æ /dashboard/individual
+Γö£ ╞Æ /dashboard/individual/itr-filing
+Γö£ ╞Æ /dashboard/services
+Γö£ ╞Æ /dashboard/services/[id]
+Γö£ Γùï /forgot-password
+Γö£ Γùï /login
+Γö£ Γùï /register
+Γöö Γùï /reset-password
+
+
+╞Æ Proxy (Middleware)
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

@@ -1,0 +1,413 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id               String            @id @default(cuid())
+  name             String?
+  email            String            @unique
+  emailVerified    DateTime?
+  image            String?
+  password         String?
+  role             UserRole          @default(INDIVIDUAL)
+  pan              String?
+  aadhaar          String?
+  gstin            String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  lastLogin        DateTime?
+  accounts         Account[]
+  auditLogs        AuditLog[]
+  documents        Document[]
+  fileAccessLogs   FileAccessLog[]
+  gstProfile       GstProfile?
+  internalNotes    InternalNote[]    @relation("UserNotes")
+  invoices         Invoice[]
+  platformInvoices PlatformInvoice[]
+  serviceRequests  ServiceRequest[]
+  sessions         Session[]
+  taxReturns       TaxReturn[]
+  tdsDeductees     TdsDeductee[]
+  tdsReturns       TdsReturn[]
+  tokens           UserToken[]
+
+  @@map("users")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model UserToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique @default(cuid())
+  type      TokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_tokens")
+}
+
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String?
+  action     AuditAction
+  entityId   String?
+  entityType String?
+  details    Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+  user       User?       @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+model TaxReturn {
+  id                String          @id @default(cuid())
+  userId            String
+  assessmentYear    String          @default("2025-26")
+  status            TaxReturnStatus @default(DRAFT)
+  personalData      Json?
+  incomeData        Json?
+  deductionsData    Json?
+  netTaxLiability   Float?
+  grossTaxLiability Float?
+  selectedRegime    TaxRegime?
+  ackNumber         String?         @unique
+  submittedAt       DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  documents         Document[]
+  user              User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, assessmentYear])
+  @@map("tax_returns")
+}
+
+model Document {
+  id               String          @id @default(cuid())
+  userId           String
+  taxReturnId      String?
+  documentType     DocumentType    @default(OTHER)
+  fileName         String
+  fileSize         Int
+  storagePath      String?
+  s3Key            String?         @unique
+  mimeType         String?
+  isEncrypted      Boolean         @default(true)
+  uploadedAt       DateTime        @default(now())
+  serviceRequestId String?
+  serviceRequest   ServiceRequest? @relation(fields: [serviceRequestId], references: [id])
+  taxReturn        TaxReturn?      @relation(fields: [taxReturnId], references: [id])
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessLogs       FileAccessLog[]
+
+  @@map("documents")
+}
+
+model FileAccessLog {
+  id         String   @id @default(cuid())
+  documentId String
+  userId     String
+  accessedAt DateTime @default(now())
+  action     String
+  ipAddress  String?
+  userAgent  String?
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+  @@index([userId])
+  @@map("file_access_logs")
+}
+
+model GstProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  gstin     String   @unique
+  legalName String
+  tradeName String?
+  address   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("gst_profiles")
+}
+
+model Invoice {
+  id                String      @id @default(cuid())
+  userId            String
+  type              InvoiceType
+  invoiceNumber     String
+  date              DateTime
+  counterpartyName  String?
+  counterpartyGstin String?
+  items             Json
+  totalTaxableValue Float
+  totalCgst         Float       @default(0)
+  totalSgst         Float       @default(0)
+  totalIgst         Float       @default(0)
+  totalAmount       Float
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  user              User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type, date])
+  @@map("invoices")
+}
+
+model ServiceRequest {
+  id                        String               @id @default(cuid())
+  userId                    String
+  category                  ServiceCategory
+  status                    ServiceRequestStatus @default(PENDING_DOCUMENTS)
+  assignedToId              String?
+  notes                     String?
+  amount                    Int                  @default(0)
+  razorpayOrderId           String?              @unique
+  razorpayPaymentId         String?              @unique
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  slaDeadline               DateTime?
+  filedAcknowledgementS3Key String?
+  documents                 Document[]
+  internalNotes             InternalNote[]
+  platformInvoice           PlatformInvoice?
+  user                      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("service_requests")
+}
+
+model InternalNote {
+  id               String         @id @default(cuid())
+  serviceRequestId String
+  authorId         String
+  content          String
+  createdAt        DateTime       @default(now())
+  author           User           @relation("UserNotes", fields: [authorId], references: [id])
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+
+  @@index([serviceRequestId])
+  @@map("internal_notes")
+}
+
+model PlatformInvoice {
+  id               String         @id @default(cuid())
+  userId           String
+  serviceRequestId String         @unique
+  invoiceNumber    String         @unique
+  subtotal         Int
+  cgst             Int
+  sgst             Int
+  igst             Int            @default(0)
+  total            Int
+  s3Key            String?
+  createdAt        DateTime       @default(now())
+  serviceRequest   ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("platform_invoices")
+}
+
+model TdsReturn {
+  id            String          @id @default(cuid())
+  userId        String
+  financialYear String
+  quarter       Int
+  formType      TdsFormType
+  status        TdsReturnStatus @default(DRAFT)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  challans      TdsChallan[]
+  entries       TdsEntry[]
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, financialYear, quarter, formType])
+  @@map("tds_returns")
+}
+
+model TdsDeductee {
+  id       String           @id @default(cuid())
+  userId   String
+  pan      String
+  name     String
+  category DeducteeCategory @default(NON_COMPANY)
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries  TdsEntry[]
+
+  @@index([userId])
+  @@map("tds_deductees")
+}
+
+model TdsEntry {
+  id            String      @id @default(cuid())
+  returnId      String
+  deducteeId    String
+  sectionCode   String
+  dateOfPayment DateTime
+  amountPaid    Float
+  tdsRate       Float
+  tdsAmount     Float
+  surcharge     Float       @default(0)
+  educationCess Float       @default(0)
+  totalTds      Float
+  deductee      TdsDeductee @relation(fields: [deducteeId], references: [id], onDelete: Cascade)
+  tdsReturn     TdsReturn   @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  @@map("tds_entries")
+}
+
+model TdsChallan {
+  id            String    @id @default(cuid())
+  returnId      String
+  bsrCode       String
+  dateOfDeposit DateTime
+  challanSerial String
+  amount        Float
+  interest      Float     @default(0)
+  penalty       Float     @default(0)
+  tdsReturn     TdsReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  @@map("tds_challans")
+}
+
+enum UserRole {
+  INDIVIDUAL
+  BUSINESS
+  CA
+  ADMIN
+  TAX_EXECUTIVE
+  SENIOR_REVIEWER
+}
+
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum AuditAction {
+  LOGIN
+  LOGOUT
+  PASSWORD_CHANGE
+  DATA_EXPORT
+  DOCUMENT_UPLOAD
+  DOCUMENT_VIEW
+  PAYMENT_INITIATED
+  PAYMENT_SUCCESS
+  PROFILE_UPDATE
+  SENSITIVE_DATA_ACCESS
+  ITR_SUBMISSION
+}
+
+enum TaxReturnStatus {
+  DRAFT
+  SUBMITTED
+  PROCESSED
+  REJECTED
+}
+
+enum TaxRegime {
+  NEW
+  OLD
+}
+
+enum DocumentType {
+  FORM16
+  FORM26AS
+  BANK_STATEMENT
+  RENT_RECEIPT
+  INVESTMENT_PROOF
+  AIS_TIS
+  OTHER
+}
+
+enum InvoiceType {
+  SALES
+  PURCHASE
+}
+
+enum ServiceCategory {
+  ITR_FILING
+  GST_FILING
+  TDS_FILING
+  BUSINESS_COMPLIANCE
+}
+
+enum ServiceRequestStatus {
+  PENDING_PAYMENT
+  PAYMENT_CONFIRMED
+  PENDING_DOCUMENTS
+  DOCUMENTS_SUBMITTED
+  UNDER_REVIEW
+  CLARIFICATION_REQUIRED
+  COMPLETED
+  FILED
+  REJECTED
+}
+
+enum TdsFormType {
+  FORM_24Q
+  FORM_26Q
+  FORM_27Q
+  FORM_27EQ
+}
+
+enum TdsReturnStatus {
+  DRAFT
+  CHALLAN_PENDING
+  READY_TO_FILE
+  FILED
+}
+
+enum DeducteeCategory {
+  COMPANY
+  NON_COMPANY
+}
