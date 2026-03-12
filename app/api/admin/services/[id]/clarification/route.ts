@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UserRole, ServiceRequestStatus } from "@prisma/client";
-import { sendInvoiceEmail } from "@/lib/resend"; // Re-using resend logic or similar
-import { resend } from "@/lib/resend";
+import { getResend } from "@/lib/resend";
 
 export async function POST(
     req: Request,
@@ -32,7 +31,7 @@ export async function POST(
 
         // Notify user via Resend
         if (process.env.RESEND_API_KEY) {
-            await resend.emails.send({
+            await getResend().emails.send({
                 from: "TaxKosh Support <support@taxkosh.com>",
                 to: [updatedRequest.user.email],
                 subject: `Clarification Required - ${updatedRequest.id.split("-")[0]}`,

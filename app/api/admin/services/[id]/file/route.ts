@@ -3,7 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { UserRole, ServiceRequestStatus } from "@prisma/client";
 import { uploadToS3 } from "@/lib/s3";
-import { resend } from "@/lib/resend";
+import { getResend } from "@/lib/resend";
 
 export async function POST(
     req: Request,
@@ -44,7 +44,7 @@ export async function POST(
 
         // 3. Notify User
         if (process.env.RESEND_API_KEY) {
-            await resend.emails.send({
+            await getResend().emails.send({
                 from: "TaxKosh Filing <filing@taxkosh.com>",
                 to: [updatedRequest.user.email],
                 subject: `Filing Completed - ${updatedRequest.category.replace(/_/g, " ")}`,

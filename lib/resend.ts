@@ -1,6 +1,13 @@
 import { Resend } from "resend";
 
-export const resend = new Resend(process.env.RESEND_API_KEY || "re_TestKey123");
+// Lazily instantiated — Resend v3+ throws in the constructor when no API key
+// is present, which crashes Next.js build-time module evaluation.
+export function getResend() {
+    return new Resend(process.env.RESEND_API_KEY || "re_TestKey123");
+}
+
+// Convenience alias used by route files already importing `resend`
+// Updated callers to use getResend() below 
 
 export async function sendInvoiceEmail(toEmail: string, userName: string, invoiceNumber: string, invoicePdfBuffer: Buffer) {
     if (!process.env.RESEND_API_KEY) {
@@ -9,7 +16,7 @@ export async function sendInvoiceEmail(toEmail: string, userName: string, invoic
     }
 
     try {
-        const { data, error } = await resend.emails.send({
+        const { data, error } = await getResend().emails.send({
             from: "TaxKosh Billing <billing@taxkosh.com>", // You'd need a verified domain in Resend
             to: [toEmail],
             subject: `TaxKosh Invoice - ${invoiceNumber}`,

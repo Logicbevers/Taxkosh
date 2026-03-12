@@ -1,6 +1,11 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Lazily instantiated so the constructor is not called at build time
+// (Resend v3+ throws when no API key is passed during module evaluation)
+function getResend() {
+  return new Resend(process.env.RESEND_API_KEY);
+}
+
 const FROM = process.env.EMAIL_FROM ?? "TaxKosh <noreply@taxkosh.in>";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -13,7 +18,7 @@ export async function sendVerificationEmail(email: string, token: string) {
     return;
   }
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Verify your TaxKosh email address",
@@ -39,7 +44,7 @@ export async function sendPasswordResetEmail(email: string, token: string) {
     return;
   }
 
-  await resend.emails.send({
+  await getResend().emails.send({
     from: FROM,
     to: email,
     subject: "Reset your TaxKosh password",
