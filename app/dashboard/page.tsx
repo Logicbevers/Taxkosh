@@ -16,17 +16,19 @@ import {
     Receipt
 } from "lucide-react";
 import Link from "next/link";
-import { ServiceRequestStatus, ServiceCategory } from "@prisma/client";
+import { ServiceRequestStatus } from "@prisma/client";
 
 const STATUS_CONFIG: Record<ServiceRequestStatus, { label: string, color: string, icon: any }> = {
-    PENDING_PAYMENT: { label: "Action: Payment", color: "text-amber-600 bg-amber-50 border-amber-200", icon: Clock },
-    PAYMENT_CONFIRMED: { label: "Processing", color: "text-blue-600 bg-blue-50 border-blue-200", icon: CheckCircle2 },
-    PENDING_DOCUMENTS: { label: "Action: Upload Docs", color: "text-amber-600 bg-amber-50 border-amber-200", icon: AlertCircle },
+    CREATED: { label: "Initialized", color: "text-slate-600 bg-slate-50 border-slate-200", icon: Clock },
+    PAYMENT_PENDING: { label: "Action: Payment", color: "text-amber-600 bg-amber-50 border-amber-200", icon: Clock },
+    PAID: { label: "Payment Success", color: "text-blue-600 bg-blue-50 border-blue-200", icon: CheckCircle2 },
+    DOCUMENTS_PENDING: { label: "Action: Upload Docs", color: "text-amber-600 bg-amber-50 border-amber-200", icon: AlertCircle },
     DOCUMENTS_SUBMITTED: { label: "Under Review", color: "text-indigo-600 bg-indigo-50 border-indigo-200", icon: Clock },
-    UNDER_REVIEW: { label: "Under Review", color: "text-indigo-600 bg-indigo-50 border-indigo-200", icon: Clock },
+    UNDER_PROCESS: { label: "Processing", color: "text-indigo-600 bg-indigo-50 border-indigo-200", icon: Clock },
     CLARIFICATION_REQUIRED: { label: "Action: Clarify", color: "text-destructive bg-destructive/5 border-destructive/20", icon: AlertCircle },
-    COMPLETED: { label: "Completed", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
+    READY_FOR_FILING: { label: "Ready", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
     FILED: { label: "Success: Filed", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
+    COMPLETED: { label: "Completed", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
     REJECTED: { label: "Rejected", color: "text-destructive bg-destructive/5 border-destructive/20", icon: AlertCircle },
 };
 
@@ -36,12 +38,13 @@ export default async function DashboardPage() {
 
     const requests = await prisma.serviceRequest.findMany({
         where: { userId: session.user.id },
+        include: { service: true },
         orderBy: { updatedAt: "desc" },
         take: 5
     });
 
     const actionRequired = requests.filter(r =>
-        ([ServiceRequestStatus.PENDING_DOCUMENTS, ServiceRequestStatus.CLARIFICATION_REQUIRED, ServiceRequestStatus.PENDING_PAYMENT] as ServiceRequestStatus[]).includes(r.status)
+        ([ServiceRequestStatus.DOCUMENTS_PENDING, ServiceRequestStatus.CLARIFICATION_REQUIRED, ServiceRequestStatus.PAYMENT_PENDING] as ServiceRequestStatus[]).includes(r.status)
     );
 
     return (
@@ -70,7 +73,7 @@ export default async function DashboardPage() {
                                     </div>
                                     <div>
                                         <p className="font-semibold text-amber-900 dark:text-amber-100">
-                                            Action Required: {req.category.replace(/_/g, " ")}
+                                            Action Required: {req.service?.name || "Service Request"}
                                         </p>
                                         <p className="text-sm text-amber-700/80 dark:text-amber-400">
                                             {req.status === ServiceRequestStatus.CLARIFICATION_REQUIRED
@@ -108,7 +111,7 @@ export default async function DashboardPage() {
                             <div className="divide-y divide-border/40">
                                 {requests.map(req => {
                                     const config = STATUS_CONFIG[req.status];
-                                    const StatusIcon = config.icon;
+                                    const StatusIcon = config?.icon || FileText;
                                     return (
                                         <Link key={req.id} href={`/dashboard/services/${req.id}`} className="block hover:bg-muted/20 transition-colors">
                                             <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -117,13 +120,13 @@ export default async function DashboardPage() {
                                                         <FileText className="h-5 w-5 text-primary" />
                                                     </div>
                                                     <div>
-                                                        <p className="font-medium">{req.category.replace(/_/g, " ")}</p>
+                                                        <p className="font-medium">{req.service?.name}</p>
                                                         <p className="text-xs text-muted-foreground">Updated {new Date(req.updatedAt).toLocaleDateString()}</p>
                                                     </div>
                                                 </div>
-                                                <Badge variant="outline" className={`px-2.5 py-1 flex items-center gap-1.5 ${config.color} border-none font-medium`}>
+                                                <Badge variant="outline" className={`px-2.5 py-1 flex items-center gap-1.5 ${config?.color || ''} border-none font-medium`}>
                                                     <StatusIcon className="w-3.5 h-3.5" />
-                                                    {config.label}
+                                                    {config?.label || req.status}
                                                 </Badge>
                                             </div>
                                         </Link>

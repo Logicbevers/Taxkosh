@@ -9,10 +9,10 @@ interface Step {
 }
 
 const steps: Step[] = [
-    { status: ServiceRequestStatus.PENDING_PAYMENT, label: "Payment", description: "Service initiated" },
-    { status: ServiceRequestStatus.PAYMENT_CONFIRMED, label: "Confirmed", description: "Payment verified" },
+    { status: ServiceRequestStatus.PAYMENT_PENDING, label: "Payment", description: "Service initiated" },
+    { status: ServiceRequestStatus.PAID, label: "Confirmed", description: "Payment verified" },
     { status: ServiceRequestStatus.DOCUMENTS_SUBMITTED, label: "Submitted", description: "Documents received" },
-    { status: ServiceRequestStatus.UNDER_REVIEW, label: "Review", description: "Expert is checking" },
+    { status: ServiceRequestStatus.UNDER_PROCESS, label: "Review", description: "Expert is checking" },
     { status: ServiceRequestStatus.FILED, label: "Filed", description: "Govt acknowledgement" },
 ];
 
@@ -24,7 +24,7 @@ export function ServiceTimeline({ currentStatus }: { currentStatus: ServiceReque
         const statusOrder = steps.map(s => s.status);
         const currentIndex = statusOrder.indexOf(
             currentStatus === ServiceRequestStatus.CLARIFICATION_REQUIRED
-                ? ServiceRequestStatus.UNDER_REVIEW
+                ? ServiceRequestStatus.UNDER_PROCESS
                 : currentStatus
         );
         const stepIndex = index;
@@ -42,7 +42,7 @@ export function ServiceTimeline({ currentStatus }: { currentStatus: ServiceReque
 
             {steps.map((step, idx) => {
                 const state = getStepState(step.status, idx);
-                const isClarification = step.status === ServiceRequestStatus.UNDER_REVIEW && currentStatus === ServiceRequestStatus.CLARIFICATION_REQUIRED;
+                const isClarification = step.status === ServiceRequestStatus.UNDER_PROCESS && currentStatus === ServiceRequestStatus.CLARIFICATION_REQUIRED;
 
                 return (
                     <div key={step.status} className="relative z-10 flex flex-col items-center group">

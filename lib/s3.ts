@@ -1,9 +1,35 @@
 import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import fs from "fs/promises";
+import path from "path";
 
-// These variables should be placed in your .env or .env.local file
-const s3Region = process.env.AWS_REGION || "ap-south-1";
-const s3Bucket = process.env.AWS_S3_BUCKET_NAME || "taxkosh-secure-docs-bucket";
+const s3Region = process.env.AWS_REGION ?? "ap-south-1";
+
+/**
+ * True when real S3 credentials/bucket are configured. When false (typical in
+ * local dev), uploads/reads transparently fall back to on-disk storage under
+ * `.local-uploads/` so document flows work end-to-end without AWS.
+ */
+export const S3_CONFIGURED = Boolean(process.env.AWS_S3_BUCKET_NAME);
+
+const LOCAL_ROOT = path.join(process.cwd(), ".local-uploads");
+
+// Resolve an s3Key to a local path, guarding against path traversal.
+function localPathForKey(s3Key: string): string {
+    const safe = s3Key.replace(/\.\.[/\\]/g, "");
+    return path.join(LOCAL_ROOT, safe);
+}
+
+/** Read a locally-stored object (dev fallback). */
+export async function readLocalObject(s3Key: string): Promise<Buffer> {
+    return fs.readFile(localPathForKey(s3Key));
+}
+
+function getS3Bucket(): string {
+    const bucket = process.env.AWS_S3_BUCKET_NAME;
+    if (!bucket) throw new Error("AWS_S3_BUCKET_NAME env var must be set");
+    return bucket;
+}
 
 // Standard S3 Client initialization. 
 // Uses AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY automatically if available in the environment.
@@ -23,8 +49,17 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
     const safeFileName = fileName.replace(/[^a-zA-Z0-9.\-_]/g, "_");
     const s3Key = `uploads/${timestamp}_${safeFileName}`;
 
+    // Dev fallback: persist to local disk when S3 isn't configured so the
+    // document upload flow works end-to-end without AWS.
+    if (!S3_CONFIGURED) {
+        const dest = localPathForKey(s3Key);
+        await fs.mkdir(path.dirname(dest), { recursive: true });
+        await fs.writeFile(dest, fileBuffer);
+        return s3Key;
+    }
+
     const command = new PutObjectCommand({
-        Bucket: s3Bucket,
+        Bucket: getS3Bucket(),
         Key: s3Key,
         Body: fileBuffer,
         ContentType: mimeType,
@@ -37,8 +72,13 @@ export async function uploadToS3(fileBuffer: Buffer, fileName: string, mimeType:
 }
 
 export async function generateSignedViewUrl(s3Key: string, expiresInSecs = 300) {
+    if (!S3_CONFIGURED) {
+        // Dev fallback served by the document view route.
+        return `/api/documents/view?key=${encodeURIComponent(s3Key)}`;
+    }
+
     const command = new GetObjectCommand({
-        Bucket: s3Bucket,
+        Bucket: getS3Bucket(),
         Key: s3Key,
     });
 

@@ -42,13 +42,28 @@ export async function POST() {
 
         const ackNumber = generateAckNumber();
 
-        const updated = await prisma.taxReturn.update({
+        // Atomic: updateMany with a status filter makes the duplicate-submission
+        // check and the status write a single DB operation, preventing a double-click
+        // race where both requests read DRAFT and then overwrite each other's ackNumber.
+        const result = await prisma.taxReturn.updateMany({
+            where: { id: existing.id, status: "DRAFT" },
+            data: { status: "SUBMITTED", ackNumber, submittedAt: new Date() },
+        });
+
+        if (result.count === 0) {
+            // A concurrent request already submitted — return its ackNumber.
+            const current = await prisma.taxReturn.findUnique({
+                where: { id: existing.id },
+                select: { ackNumber: true },
+            });
+            return NextResponse.json(
+                { error: "ITR already submitted", ackNumber: current?.ackNumber },
+                { status: 409 }
+            );
+        }
+
+        const updated = await prisma.taxReturn.findUniqueOrThrow({
             where: { id: existing.id },
-            data: {
-                status: "SUBMITTED",
-                ackNumber,
-                submittedAt: new Date(),
-            },
         });
 
         // Audit Logging

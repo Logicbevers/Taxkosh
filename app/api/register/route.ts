@@ -1,12 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { prisma, logAudit } from "@/lib/prisma";
 import { registerSchema } from "@/lib/validations";
 import { sendVerificationEmail } from "@/lib/email";
 import { TokenType, AuditAction } from "@prisma/client";
-import { encrypt } from "@/lib/security";
+import { rateLimit } from "@/lib/middleware-utils";
+import { getClientIp } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
+    const ip = getClientIp(req);
+    const rl = rateLimit(ip, 5, 60 * 60 * 1000, "register"); // 5 registrations per hour per IP
+    if (!rl.success) {
+        return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
+    }
+
     try {
         const body = await req.json();
         const parsed = registerSchema.safeParse(body);
@@ -18,7 +26,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const { name, email, password, role, pan, gstin, aadhaarLast4 } = parsed.data;
+        const { name, email, password, role } = parsed.data;
 
         // Check existing user
         const existing = await prisma.user.findUnique({ where: { email } });
@@ -31,19 +39,20 @@ export async function POST(req: NextRequest) {
 
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Encrypt sensitive data for storage at rest
-        const encryptedPan = pan ? encrypt(pan) : null;
+        // Belt-and-suspenders: self-registration can never produce an ADMIN account,
+        // even if the schema validation is ever relaxed.
+        const safeRole = (["INDIVIDUAL", "BUSINESS", "CA"] as const).includes(role as never)
+            ? role
+            : ("INDIVIDUAL" as const);
 
-        // Create user
+        // KYC (PAN / Aadhaar / GSTIN) is collected later on the profile page,
+        // not at signup — keeps registration to a fast 4-field form.
         const user = await prisma.user.create({
             data: {
                 name,
                 email,
                 password: hashedPassword,
-                role,
-                pan: encryptedPan,
-                gstin: gstin || null,
-                aadhaar: aadhaarLast4 || null, // storing last 4 digits only per compliance
+                role: safeRole,
             },
         });
 
@@ -59,10 +68,10 @@ export async function POST(req: NextRequest) {
             req
         });
 
-        // Create email verification token (24h expiry)
         const tokenRecord = await prisma.userToken.create({
             data: {
                 userId: user.id,
+                token: crypto.randomBytes(32).toString("hex"),
                 type: TokenType.EMAIL_VERIFICATION,
                 expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
             },

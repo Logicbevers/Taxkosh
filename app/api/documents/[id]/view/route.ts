@@ -2,15 +2,21 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
-import { S3Client, GetObjectCommand } from "@aws-sdk/client-s3";
+import { GetObjectCommand } from "@aws-sdk/client-s3";
+import { s3Client, S3_CONFIGURED, readLocalObject } from "@/lib/s3";
 
-const s3Client = new S3Client({
-    region: process.env.AWS_REGION!,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-    },
-});
+// Best-effort content type from a file name (dev local-storage fallback).
+function contentTypeFromName(name: string): string {
+    const ext = name.toLowerCase().split(".").pop() ?? "";
+    switch (ext) {
+        case "pdf": return "application/pdf";
+        case "jpg":
+        case "jpeg": return "image/jpeg";
+        case "png": return "image/png";
+        case "webp": return "image/webp";
+        default: return "application/octet-stream";
+    }
+}
 
 export async function GET(
     req: Request,
@@ -59,24 +65,8 @@ export async function GET(
             }
 
             s3Key = target.s3Key!;
-            fileName = (target as any).fileName || (target as any).invoiceNumber || `Document_${id}.pdf`;
-        }
-
-        let url = "";
-        try {
-            const command = new GetObjectCommand({
-                Bucket: process.env.AWS_S3_BUCKET_NAME!,
-                Key: s3Key,
-                ResponseContentDisposition: `attachment; filename="${fileName}"`,
-            });
-            url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-        } catch (s3Error) {
-            if (process.env.TESTING_MODE) {
-                console.warn("S3 signed URL generation failed, using fallback for testing");
-                url = `https://example.com/fallback-doc/${id}`;
-            } else {
-                throw s3Error;
-            }
+            const docWithName = target as { fileName?: string; invoiceNumber?: string };
+            fileName = docWithName.fileName ?? docWithName.invoiceNumber ?? `Document_${id}.pdf`;
         }
 
         // Audit Logging
@@ -89,6 +79,24 @@ export async function GET(
             entityType: type === "filed" ? "ServiceRequest" : "Document",
             details: { type, fileName }
         });
+
+        // Dev fallback: stream the locally-stored file directly.
+        if (!S3_CONFIGURED) {
+            const buffer = await readLocalObject(s3Key);
+            return new NextResponse(new Uint8Array(buffer), {
+                headers: {
+                    "Content-Type": contentTypeFromName(fileName),
+                    "Content-Disposition": `attachment; filename="${fileName}"`,
+                },
+            });
+        }
+
+        const command = new GetObjectCommand({
+            Bucket: process.env.AWS_S3_BUCKET_NAME!,
+            Key: s3Key,
+            ResponseContentDisposition: `attachment; filename="${fileName}"`,
+        });
+        const url = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
 
         return NextResponse.redirect(url);
     } catch (error) {

@@ -49,3 +49,6 @@ tsc-errors.txt
 tsc_ascii.txt
 tsc_clean.txt
 tsc_output.txt
+
+# dev-only local file storage (S3 fallback)
+.local-uploads/

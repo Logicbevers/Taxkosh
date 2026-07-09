@@ -30,16 +30,17 @@ export default function DeducteeManager() {
     const [pan, setPan] = useState("");
     const [category, setCategory] = useState("NON_COMPANY");
 
-    useEffect(() => {
-        fetchDeductees();
-    }, []);
-
     async function fetchDeductees() {
         const res = await fetch("/api/tds/deductees");
         const data = await res.json();
         setDeductees(data);
         setLoading(false);
     }
+
+    useEffect(() => {
+        fetchDeductees();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     async function handleAddDeductee(e: React.FormEvent) {
         e.preventDefault();

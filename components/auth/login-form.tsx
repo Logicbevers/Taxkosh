@@ -17,12 +17,24 @@ import { loginSchema, type LoginInput } from "@/lib/validations";
 export function LoginForm() {
     const router = useRouter();
     const searchParams = useSearchParams();
-    const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+    // Default to the home page so users land on the browsable site, not the
+    // dashboard. Deep-links (e.g. "Choose plan" → ?callbackUrl=/services/…) still win.
+    const callbackUrl = searchParams.get("callbackUrl") ?? "/";
     const isVerified = searchParams.get("verified") === "true";
     const errorParam = searchParams.get("error");
 
     const [showPassword, setShowPassword] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState<string | null>(
+        errorParam === "MissingCSRF"
+            ? "Session expired. Please try again."
+            : errorParam === "CredentialsSignin"
+                ? "Invalid email or password."
+                : errorParam === "AccessDenied"
+                    ? "Your email is not verified. Check your inbox."
+                    : errorParam && errorParam !== "invalid-token"
+                        ? "Sign-in failed: " + errorParam
+                        : null
+    );
     const [isLoading, setIsLoading] = useState(false);
     const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
@@ -85,6 +97,26 @@ export function LoginForm() {
             {errorParam === "invalid-token" && (
                 <Alert variant="destructive" className="mb-4">
                     <AlertDescription>Invalid or expired verification link.</AlertDescription>
+                </Alert>
+            )}
+            {errorParam === "MissingCSRF" && !error && (
+                <Alert variant="destructive" className="mb-4">
+                    <AlertDescription>Security check failed. Please refresh the page and try again.</AlertDescription>
+                </Alert>
+            )}
+            {errorParam === "CredentialsSignin" && !error && (
+                <Alert variant="destructive" className="mb-4">
+                    <AlertDescription>Invalid email or password. Please check your credentials and try again.</AlertDescription>
+                </Alert>
+            )}
+            {errorParam === "AccessDenied" && !error && (
+                <Alert variant="destructive" className="mb-4">
+                    <AlertDescription>Your account email is not yet verified.</AlertDescription>
+                </Alert>
+            )}
+            {errorParam === "Configuration" && !error && (
+                <Alert variant="destructive" className="mb-4">
+                    <AlertDescription>Server configuration error. Check NEXTAUTH_URL / AUTH_SECRET in .env.</AlertDescription>
                 </Alert>
             )}
             {error && (

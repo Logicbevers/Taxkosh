@@ -1,33 +1,27 @@
 import Link from "next/link";
 import { FileText } from "lucide-react";
 
+// Every link below resolves to a real, existing route to avoid dead-ends.
 const footerLinks = {
     Services: [
-        { label: "Income Tax Filing", href: "#services" },
-        { label: "GST Filing", href: "#services" },
-        { label: "TDS Returns", href: "#services" },
-        { label: "ROC Compliance", href: "#services" },
-        { label: "CA Consultation", href: "#pricing" },
+        { label: "Income Tax Filing", href: "/services/income-tax" },
+        { label: "GST Filing", href: "/services/gst" },
+        { label: "TDS Returns", href: "/services/tds" },
+        { label: "All Services", href: "/services" },
     ],
     Company: [
-        { label: "About Us", href: "/about" },
-        { label: "Careers", href: "/careers" },
-        { label: "Blog", href: "/blog" },
-        { label: "Press", href: "/press" },
+        { label: "Why TaxKosh", href: "/#why" },
         { label: "Contact", href: "/contact" },
     ],
     Legal: [
         { label: "Privacy Policy", href: "/privacy-policy" },
         { label: "Terms of Service", href: "/terms" },
         { label: "Refund Policy", href: "/refund-policy" },
-        { label: "Grievance Officer", href: "/grievance" },
-        { label: "Cookie Policy", href: "/cookies" },
+        { label: "Grievance Officer", href: "/contact" },
     ],
     Support: [
-        { label: "Help Center", href: "/help" },
-        { label: "Filing Guides", href: "/guides" },
-        { label: "Tax Calculator", href: "/calculator" },
-        { label: "ITR Due Dates 2025", href: "/due-dates" },
+        { label: "Help & Contact", href: "/contact" },
+        { label: "Browse Services", href: "/services" },
         { label: "WhatsApp Support", href: "https://wa.me/919999999999" },
     ],
 };
@@ -47,14 +41,18 @@ export function Footer() {
                             Tax<span className="text-primary">Kosh</span>
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-                            India's smartest tax & compliance platform. Trusted by 50,000+ taxpayers.
+                            India&apos;s tax &amp; compliance platform — file Income Tax, GST &amp; TDS with expert review.
                         </p>
-                        <p className="text-xs text-muted-foreground">
-                            CIN: U72900MH2024PTC000000
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            GSTIN: 27AABCT1234A1Z5
-                        </p>
+                        {process.env.NEXT_PUBLIC_COMPANY_CIN && (
+                            <p className="text-xs text-muted-foreground">
+                                CIN: {process.env.NEXT_PUBLIC_COMPANY_CIN}
+                            </p>
+                        )}
+                        {process.env.NEXT_PUBLIC_COMPANY_GSTIN && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                                GSTIN: {process.env.NEXT_PUBLIC_COMPANY_GSTIN}
+                            </p>
+                        )}
                     </div>
 
                     {/* Link columns */}

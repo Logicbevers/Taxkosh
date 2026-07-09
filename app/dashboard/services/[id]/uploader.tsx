@@ -5,7 +5,13 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Upload, FilePlus, Loader2 } from "lucide-react"
 
-export function ServiceDocumentUploader({ serviceRequestId }: { serviceRequestId: string }) {
+export function ServiceDocumentUploader({ 
+    serviceRequestId, 
+    label 
+}: { 
+    serviceRequestId: string,
+    label?: string
+}) {
     const [isUploading, setIsUploading] = useState(false)
     const [progress, setProgress] = useState(0)
     const router = useRouter()
@@ -20,6 +26,7 @@ export function ServiceDocumentUploader({ serviceRequestId }: { serviceRequestId
         formData.append("file", file)
         formData.append("documentType", "OTHER")
         formData.append("serviceRequestId", serviceRequestId)
+        if (label) formData.append("label", label)
 
         const xhr = new XMLHttpRequest()
         xhr.open("POST", "/api/documents/upload")

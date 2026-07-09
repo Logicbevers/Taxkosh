@@ -12,9 +12,6 @@ export function DocumentItem({ doc }: { doc: { id: string, fileName: string, fil
             const data = await res.json()
             if (data.signedUrl) {
                 window.open(data.signedUrl, "_blank", "noopener,noreferrer")
-
-                // Console log the secure metadata payload as requested by requirements
-                console.log("Secure Metadata Payload:", data.metadata)
             } else {
                 alert(data.error || "Failed to load document")
             }

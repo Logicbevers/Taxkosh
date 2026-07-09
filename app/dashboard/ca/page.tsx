@@ -9,14 +9,9 @@ export default async function CADashboard() {
     if (!session) redirect("/login");
 
     return (
-        <div className="min-h-screen bg-muted/20 flex">
-            <aside className="w-64 min-h-screen bg-card border-r border-border/60 flex flex-col p-4 gap-1">
-                <Link href="/" className="flex items-center gap-2 font-bold text-lg mb-6 px-2">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <FileText className="h-3.5 w-3.5" />
-                    </span>
-                    Tax<span className="text-primary">Kosh</span>
-                </Link>
+        <div className="flex">
+            {/* Sidebar */}
+            <aside className="w-64 min-h-[calc(100vh-64px)] bg-card border-r border-border/60 flex flex-col p-4 gap-1">
                 <nav className="flex flex-col gap-1 flex-1">
                     {[
                         { icon: BarChart3, label: "Client Overview", href: "/dashboard/ca" },
@@ -29,17 +24,12 @@ export default async function CADashboard() {
                         </Link>
                     ))}
                 </nav>
-                <form action={async () => { "use server"; await signOut({ redirectTo: "/login" }); }}>
-                    <Button type="submit" variant="ghost" size="sm" className="w-full justify-start gap-3 text-muted-foreground">
-                        <LogOut className="h-4 w-4" /> Sign Out
-                    </Button>
-                </form>
             </aside>
 
+            {/* Main Content */}
             <main className="flex-1 p-8">
                 <div className="mb-8">
-                    <p className="text-sm text-muted-foreground">CA Pro Dashboard</p>
-                    <h1 className="text-2xl font-bold">{session.user.name ?? session.user.email}</h1>
+                    <h1 className="text-2xl font-bold">CA Professional Hub</h1>
                     <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2.5 py-1 rounded-full mt-2">
                         <BadgeCheck className="h-3 w-3" /> Chartered Accountant
                     </span>

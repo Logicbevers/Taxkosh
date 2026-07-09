@@ -93,10 +93,11 @@ export async function GET(req: NextRequest) {
         };
     }
 
+    const validTypes = new Set(["SALES", "PURCHASE"]);
     const invoices = await prisma.invoice.findMany({
         where: {
             userId: session.user.id,
-            ...(type ? { type: type as any } : {}),
+            ...(type && validTypes.has(type) ? { type: type as "SALES" | "PURCHASE" } : {}),
             ...(month ? { date: dateFilter } : {})
         },
         orderBy: { date: 'desc' }

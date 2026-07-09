@@ -52,52 +52,35 @@ export default async function IndividualDashboard() {
     ];
 
     return (
-        <div className="min-h-screen bg-muted/20">
-            {/* Sidebar + Main */}
-            <div className="flex">
-                {/* Sidebar */}
-                <aside className="w-64 min-h-screen bg-card border-r border-border/60 flex flex-col p-4 gap-1">
-                    <Link href="/" className="flex items-center gap-2 font-bold text-lg mb-6 px-2">
-                        <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                            <FileText className="h-3.5 w-3.5" />
-                        </span>
-                        Tax<span className="text-primary">Kosh</span>
-                    </Link>
-                    <nav className="flex flex-col gap-1 flex-1">
-                        {[
-                            { icon: BarChart3, label: "Overview", href: "/dashboard/individual" },
-                            { icon: FileText, label: "ITR Filing", href: "/dashboard/individual/itr-filing" },
-                            { icon: Receipt, label: "Tax Planner", href: "#" },
-                            { icon: User, label: "My Profile", href: "#" },
-                        ].map(({ icon: Icon, label, href }) => (
-                            <Link
-                                key={label}
-                                href={href}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                            >
-                                <Icon className="h-4 w-4" /> {label}
-                            </Link>
-                        ))}
-                    </nav>
-                    <form action={async () => {
-                        "use server";
-                        await signOut({ redirectTo: "/login" });
-                    }}>
-                        <Button type="submit" variant="ghost" size="sm" className="w-full justify-start gap-3 text-muted-foreground">
-                            <LogOut className="h-4 w-4" /> Sign Out
-                        </Button>
-                    </form>
-                </aside>
+        <div className="flex">
+            {/* Sidebar */}
+            <aside className="w-64 min-h-[calc(100vh-64px)] bg-card border-r border-border/60 flex flex-col p-4 gap-1">
+                <nav className="flex flex-col gap-1 flex-1">
+                    {[
+                        { icon: BarChart3, label: "Overview", href: "/dashboard/individual" },
+                        { icon: FileText, label: "ITR Filing", href: "/dashboard/individual/itr-filing" },
+                        { icon: Receipt, label: "Tax Planner", href: "#" },
+                        { icon: User, label: "My Profile", href: "#" },
+                    ].map(({ icon: Icon, label, href }) => (
+                        <Link
+                            key={label}
+                            href={href}
+                            className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                        >
+                            <Icon className="h-4 w-4" /> {label}
+                        </Link>
+                    ))}
+                </nav>
+            </aside>
 
-                {/* Main */}
-                <main className="flex-1 p-8">
-                    <div className="mb-8">
-                        <p className="text-sm text-muted-foreground">Welcome back,</p>
-                        <h1 className="text-2xl font-bold">{session.user.name ?? session.user.email}</h1>
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full mt-2">
-                            <User className="h-3 w-3" /> Individual Taxpayer
-                        </span>
-                    </div>
+            {/* Main */}
+            <main className="flex-1 p-8">
+                <div className="mb-8">
+                    <h1 className="text-2xl font-bold">Tax Summary</h1>
+                    <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full mt-2">
+                        <User className="h-3 w-3" /> Individual Taxpayer
+                    </span>
+                </div>
 
                     {/* Quick Stats — Live from DB */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
@@ -135,8 +118,7 @@ export default async function IndividualDashboard() {
                             </Link>
                         ))}
                     </div>
-                </main>
-            </div>
+            </main>
         </div>
     );
 }

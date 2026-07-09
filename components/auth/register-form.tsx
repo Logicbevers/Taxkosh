@@ -35,16 +35,12 @@ export function RegisterForm() {
     const {
         register,
         handleSubmit,
-        watch,
         setValue,
         formState: { errors },
     } = useForm<RegisterInput>({
         resolver: zodResolver(registerSchema),
         defaultValues: { role: "INDIVIDUAL", terms: false },
     });
-
-    const role = watch("role");
-    const showGstinField = role === "BUSINESS" || role === "CA";
 
     const onSubmit = async (data: RegisterInput) => {
         setIsLoading(true);
@@ -87,7 +83,7 @@ export function RegisterForm() {
             <div className="mb-6">
                 <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Join 50,000+ Indian taxpayers on TaxKosh
+                    Create your TaxKosh account in under a minute
                 </p>
             </div>
 
@@ -169,55 +165,9 @@ export function RegisterForm() {
                     )}
                 </div>
 
-                {/* Indian Compliance Fields */}
-                <div className="pt-2 border-t border-border/60">
-                    <p className="text-xs text-muted-foreground mb-3 font-medium uppercase tracking-wide">
-                        Indian Compliance (Optional)
-                    </p>
-                    <div className="space-y-3">
-                        <div className="space-y-1.5">
-                            <Label htmlFor="reg-pan">PAN Number</Label>
-                            <Input
-                                id="reg-pan"
-                                placeholder="ABCDE1234F"
-                                className="uppercase"
-                                {...register("pan")}
-                            />
-                            {errors.pan && <p className="text-xs text-destructive">{errors.pan.message}</p>}
-                        </div>
-
-                        <div className="space-y-1.5">
-                            <Label htmlFor="reg-aadhaar">
-                                Aadhaar (Last 4 digits only)
-                            </Label>
-                            <Input
-                                id="reg-aadhaar"
-                                placeholder="XXXX XXXX XXXX 1234 → enter 1234"
-                                maxLength={4}
-                                {...register("aadhaarLast4")}
-                            />
-                            <p className="text-[11px] text-muted-foreground">
-                                🔒 We only store the last 4 digits in compliance with UIDAI guidelines
-                            </p>
-                            {errors.aadhaarLast4 && (
-                                <p className="text-xs text-destructive">{errors.aadhaarLast4.message}</p>
-                            )}
-                        </div>
-
-                        {showGstinField && (
-                            <div className="space-y-1.5">
-                                <Label htmlFor="reg-gstin">GSTIN</Label>
-                                <Input
-                                    id="reg-gstin"
-                                    placeholder="27AABCT1234A1Z5"
-                                    className="uppercase"
-                                    {...register("gstin")}
-                                />
-                                {errors.gstin && <p className="text-xs text-destructive">{errors.gstin.message}</p>}
-                            </div>
-                        )}
-                    </div>
-                </div>
+                <p className="text-[11px] text-muted-foreground -mt-1">
+                    🔒 You can add your PAN &amp; GST details later from your profile — no KYC needed to sign up.
+                </p>
 
                 {/* Terms */}
                 <div className="flex items-start gap-2">

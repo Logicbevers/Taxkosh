@@ -3,11 +3,15 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import z from "zod";
 
+// Statuses a regular (non-admin) user is allowed to self-set.
+const USER_ALLOWED_STATUSES = ["DOCUMENTS_SUBMITTED"] as const;
+
+// Full list that admins/staff may set.
 const updateStatusSchema = z.object({
     status: z.enum([
-        "PENDING_DOCUMENTS",
+        "DOCUMENTS_PENDING",
         "DOCUMENTS_SUBMITTED",
-        "UNDER_REVIEW",
+        "UNDER_PROCESS",
         "CLARIFICATION_REQUIRED",
         "COMPLETED",
         "FILED",
@@ -38,8 +42,16 @@ export async function POST(
             return NextResponse.json({ error: "Not found" }, { status: 404 });
         }
 
-        // Must own the request to update status for now (or be admin in a real app)
+        // Must own the request.
         if (existing.userId !== session.user.id) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        // Non-admin users may only transition their own request to DOCUMENTS_SUBMITTED.
+        // All other status changes (COMPLETED, REJECTED, FILED, etc.) are admin-only.
+        const adminRoles = ["ADMIN", "TAX_EXECUTIVE", "SENIOR_REVIEWER"];
+        const isAdmin = adminRoles.includes((session.user as { role?: string }).role ?? "");
+        if (!isAdmin && !USER_ALLOWED_STATUSES.includes(body.status as never)) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
@@ -53,7 +65,7 @@ export async function POST(
         });
 
         return NextResponse.json(updatedRequest);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Failed to update status:", error);
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.errors }, { status: 400 });

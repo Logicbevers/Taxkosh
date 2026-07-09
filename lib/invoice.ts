@@ -49,7 +49,8 @@ export function generatePdfInvoice(data: InvoiceData): Promise<Buffer> {
             .text(data.userEmail, 50, yPosInfo + 30);
 
         if (data.userPan) {
-            doc.text(`PAN: ${data.userPan}`, 50, yPosInfo + 45);
+            const maskedPan = `${data.userPan.slice(0, 5)}****${data.userPan.slice(9)}`;
+            doc.text(`PAN: ${maskedPan}`, 50, yPosInfo + 45);
         }
 
         doc.moveDown(4);

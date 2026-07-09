@@ -12,7 +12,7 @@ const pillars = [
         icon: <ShieldCheck className="h-6 w-6 text-emerald-500" />,
         title: "Bank-Grade Security",
         description:
-            "Your data is encrypted with 256-bit AES at rest and in transit. Hosted on AWS Mumbai region. ISO 27001 and SOC 2 Type II certified. We never sell your data.",
+            "Your data is encrypted with 256-bit AES at rest and in transit, hosted in the AWS Mumbai region with access-controlled document storage. We never sell your data.",
     },
     {
         icon: <Users className="h-6 w-6 text-violet-500" />,
@@ -22,11 +22,12 @@ const pillars = [
     },
 ];
 
+// Honest platform capabilities rather than unverified vanity metrics.
 const stats = [
-    { value: "₹12 Cr+", label: "Tax Refunds Secured" },
-    { value: "50,000+", label: "Taxpayers Served" },
-    { value: "4.9 ★", label: "Average Rating" },
-    { value: "99.8%", label: "Filing Accuracy" },
+    { value: "ITR 1–7", label: "All return types" },
+    { value: "3-in-1", label: "Income Tax · GST · TDS" },
+    { value: "CA-reviewed", label: "Before every filing" },
+    { value: "AES-256", label: "Encrypted & private" },
 ];
 
 export function WhyTaxKosh() {

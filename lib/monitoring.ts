@@ -1,12 +1,17 @@
 /**
- * TaxKosh Monitoring & Analytics Wrapper
- * Mocks Sentry and PostHog for Phase 14 Production Readiness.
+ * TaxKosh Monitoring Wrapper
+ *
+ * To activate real Sentry error tracking:
+ *   1. npm install @sentry/nextjs
+ *   2. Run: npx @sentry/wizard@latest -i nextjs
+ *   3. Set SENTRY_DSN env var
+ *   4. Uncomment the Sentry calls below and remove console fallbacks
  */
 
 type LogLevel = "info" | "warn" | "error";
 
 interface TrackEventProps {
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 class Monitoring {
@@ -24,48 +29,44 @@ class Monitoring {
         return Monitoring.instance;
     }
 
-    /**
-     * Track user events (PostHog-like)
-     */
     public trackEvent(eventName: string, properties?: TrackEventProps) {
-        if (this.isProd) {
-            // Simulated PostHog call
-            console.log(`[Analytics] Tracked: ${eventName}`, properties);
-        } else {
+        if (!this.isProd) {
             console.debug(`[Dev-Analytics] ${eventName}`, properties);
         }
+        // TODO: Sentry.addBreadcrumb({ message: eventName, data: properties });
+        // TODO: PostHog.capture(eventName, properties);
     }
 
-    /**
-     * Capture exceptions (Sentry-like)
-     */
-    public captureException(error: Error, context?: Record<string, any>) {
-        const timestamp = new Date().toISOString();
-        if (this.isProd) {
-            // Simulated Sentry call
-            console.error(`[Sentry-Capture] [${timestamp}]`, error.message, context);
-        } else {
-            console.error(`[Dev-Error] [${timestamp}]`, error, context);
+    public captureException(error: Error, context?: Record<string, unknown>) {
+        if (!this.isProd) {
+            console.error("[Dev-Error]", error, context);
+            return;
         }
+        // TODO: Sentry.captureException(error, { extra: context });
+        // Fallback: write to stderr so log aggregation picks it up
+        console.error(
+            JSON.stringify({
+                level: "error",
+                message: error.message,
+                stack: error.stack,
+                context,
+                ts: new Date().toISOString(),
+            })
+        );
     }
 
-    /**
-     * Log breadcrumbs or generic info
-     */
-    public log(message: string, level: LogLevel = "info", data?: any) {
-        const timestamp = new Date().toLocaleTimeString();
-        const prefix = `[Log] [${timestamp}] [${level.toUpperCase()}]`;
-
-        switch (level) {
-            case "error":
-                console.error(prefix, message, data);
-                break;
-            case "warn":
-                console.warn(prefix, message, data);
-                break;
-            default:
-                console.log(prefix, message, data);
+    public log(message: string, level: LogLevel = "info", data?: unknown) {
+        if (!this.isProd) {
+            const prefix = `[Dev-Log] [${level.toUpperCase()}]`;
+            if (level === "error") console.error(prefix, message, data);
+            else if (level === "warn") console.warn(prefix, message, data);
+            else console.log(prefix, message, data);
+            return;
         }
+        // Structured JSON output — picked up by Vercel/CloudWatch log aggregators
+        console[level === "error" ? "error" : level === "warn" ? "warn" : "log"](
+            JSON.stringify({ level, message, data, ts: new Date().toISOString() })
+        );
     }
 }
 

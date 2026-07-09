@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { razorpay, getServicePricingInPaise } from "@/lib/razorpay";
-import { ServiceCategory } from "@prisma/client";
+import { razorpay, isRazorpayConfigured } from "@/lib/razorpay";
 
 export async function POST(req: Request) {
     const session = await auth();
@@ -12,47 +11,84 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { category } = body;
+        const { serviceId, planId } = body;
 
-        // Verify category
-        const validCategories = Object.values(ServiceCategory);
-        if (!validCategories.includes(category as ServiceCategory)) {
-            return NextResponse.json({ error: "Invalid Service Category" }, { status: 400 });
+        // Always derive the charge from the server-side price — never trust the client's amount.
+        let amountPaise: number;
+        if (planId) {
+            const plan = await prisma.servicePlan.findUnique({ where: { id: planId } });
+            if (!plan) {
+                return NextResponse.json({ error: "Invalid plan ID" }, { status: 400 });
+            }
+            amountPaise = Math.round(plan.price * 100);
+        } else if (serviceId) {
+            const service = await prisma.service.findUnique({ where: { id: serviceId } });
+            if (!service) {
+                return NextResponse.json({ error: "Invalid service ID" }, { status: 400 });
+            }
+            amountPaise = Math.round(service.price * 100);
+        } else {
+            return NextResponse.json({ error: "A plan or service ID is required" }, { status: 400 });
         }
 
-        const amountPaise = getServicePricingInPaise(category as ServiceCategory);
+        // Demo mode: no real gateway keys configured. Skip Razorpay entirely and
+        // create a pending request the client can settle via the demo endpoint,
+        // so stakeholders can walk the full checkout without live credentials.
+        if (!isRazorpayConfigured()) {
+            const serviceReq = await prisma.serviceRequest.create({
+                data: {
+                    userId: session.user.id,
+                    serviceId,
+                    planId,
+                    status: "PAYMENT_PENDING",
+                    amount: amountPaise,
+                    razorpayOrderId: `demo_order_${Date.now()}`,
+                },
+            });
+            return NextResponse.json({
+                success: true,
+                demoMode: true,
+                serviceRequestId: serviceReq.id,
+                amountPaise,
+                currency: "INR",
+            });
+        }
 
-        // 1. Create the Pending Service Request
-        const serviceReq = await prisma.serviceRequest.create({
-            data: {
-                userId: session.user.id,
-                category: category as ServiceCategory,
-                status: "PENDING_PAYMENT",
-                amount: amountPaise,
-            }
-        });
+        // We use a stable receipt id so we can reconcile even if the DB write
+        // happens after the Razorpay order is created.
+        const receiptId = `sr_${session.user.id.slice(-6)}_${Date.now()}`;
 
-        // 2. Create the Razorpay Order
+        // 1. Create the Razorpay order FIRST. If the gateway is unavailable
+        //    (missing/invalid keys, network), we bail out here and never create
+        //    an orphan PAYMENT_PENDING service request in our DB.
         const options = {
             amount: amountPaise,
             currency: "INR",
-            receipt: serviceReq.id,
-            payment_capture: 1, // Auto capture
+            receipt: receiptId,
+            payment_capture: 1, // auto-capture
         };
-
-        let orderId = `test_order_${Date.now()}`; // fallback
-
+        let orderId: string;
         try {
             const order = await razorpay.orders.create(options);
             orderId = order.id;
-        } catch (rError) {
-            console.warn("Razorpay order creation failed (likely missing live creds). Simulating order fallback.", rError);
+        } catch (gatewayErr) {
+            console.error("Razorpay order creation failed:", gatewayErr);
+            return NextResponse.json(
+                { error: "Payment gateway is temporarily unavailable. Please try again in a moment." },
+                { status: 503 }
+            );
         }
 
-        // 3. Attach Razorpay order ID to our Service Request Tracking
-        await prisma.serviceRequest.update({
-            where: { id: serviceReq.id },
-            data: { razorpayOrderId: orderId }
+        // 2. Only now persist the pending service request, with the order id set.
+        const serviceReq = await prisma.serviceRequest.create({
+            data: {
+                userId: session.user.id,
+                serviceId,
+                planId,
+                status: "PAYMENT_PENDING",
+                amount: amountPaise,
+                razorpayOrderId: orderId,
+            },
         });
 
         return NextResponse.json({
@@ -65,6 +101,6 @@ export async function POST(req: Request) {
 
     } catch (e) {
         console.error("Create Order Error:", e);
-        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+        return NextResponse.json({ error: "Something went wrong while starting your payment. Please try again." }, { status: 500 });
     }
 }

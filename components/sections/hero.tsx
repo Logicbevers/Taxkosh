@@ -51,7 +51,7 @@ const features = [
     {
         title: "Bank-Grade Security",
         description:
-            "256-bit AES encryption, ISO 27001 certified infrastructure, and zero data sharing with third parties.",
+            "256-bit AES encryption, access-controlled document storage, and zero data sharing with third parties.",
         header: <Skeleton className="bg-primary/5 border border-primary/10" />,
         icon: <ShieldCheck className="h-4 w-4 text-primary" />,
         className: "md:col-span-2",
@@ -91,16 +91,16 @@ export function Hero() {
                     </Button>
                 </div>
 
-                {/* Trust badges */}
+                {/* Trust badges — describe the platform's design, no unverified claims */}
                 <div className="mt-10 flex flex-wrap justify-center gap-6 text-xs text-muted-foreground">
                     <span className="flex items-center gap-1.5">
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> ISO 27001 Certified
+                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Bank-grade encryption
                     </span>
                     <span className="flex items-center gap-1.5">
-                        <BadgeCheck className="h-3.5 w-3.5 text-primary" /> GSTIN Verified Platform
+                        <BadgeCheck className="h-3.5 w-3.5 text-primary" /> CA-reviewed filings
                     </span>
                     <span className="flex items-center gap-1.5">
-                        <Users className="h-3.5 w-3.5 text-violet-500" /> 50,000+ Happy Taxpayers
+                        <Users className="h-3.5 w-3.5 text-violet-500" /> No third-party data sharing
                     </span>
                 </div>
             </div>

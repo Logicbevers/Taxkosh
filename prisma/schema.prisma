@@ -15,12 +15,14 @@ model User {
   image            String?
   password         String?
   role             UserRole          @default(INDIVIDUAL)
+  phone            String?
   pan              String?
   aadhaar          String?
   gstin            String?
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
   lastLogin        DateTime?
+  phoneVerified    DateTime?
   accounts         Account[]
   auditLogs        AuditLog[]
   documents        Document[]
@@ -30,11 +32,13 @@ model User {
   invoices         Invoice[]
   platformInvoices PlatformInvoice[]
   serviceRequests  ServiceRequest[]
+  notifications    Notification[]
   sessions         Session[]
   taxReturns       TaxReturn[]
   tdsDeductees     TdsDeductee[]
   tdsReturns       TdsReturn[]
   tokens           UserToken[]
+  phoneOTPs        PhoneOTP[]
 
   @@map("users")
 }
@@ -80,7 +84,7 @@ model VerificationToken {
 model UserToken {
   id        String    @id @default(cuid())
   userId    String
-  token     String    @unique @default(cuid())
+  token     String    @unique @default(uuid())
   type      TokenType
   expiresAt DateTime
   usedAt    DateTime?
@@ -139,6 +143,7 @@ model Document {
   storagePath      String?
   s3Key            String?         @unique
   mimeType         String?
+  label            String?
   isEncrypted      Boolean         @default(true)
   uploadedAt       DateTime        @default(now())
   serviceRequestId String?
@@ -147,6 +152,9 @@ model Document {
   user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   accessLogs       FileAccessLog[]
 
+  @@index([userId])
+  @@index([serviceRequestId])
+  @@index([taxReturnId])
   @@map("documents")
 }
 
@@ -205,8 +213,10 @@ model Invoice {
 model ServiceRequest {
   id                        String               @id @default(cuid())
   userId                    String
-  category                  ServiceCategory
-  status                    ServiceRequestStatus @default(PENDING_DOCUMENTS)
+  serviceId                 String?
+  planId                    String?
+  catalogNodeId             String?
+  status                    ServiceRequestStatus @default(CREATED)
   assignedToId              String?
   notes                     String?
   amount                    Int                  @default(0)
@@ -220,8 +230,14 @@ model ServiceRequest {
   internalNotes             InternalNote[]
   platformInvoice           PlatformInvoice?
   user                      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  service                   Service?             @relation(fields: [serviceId], references: [id])
+  plan                      ServicePlan?         @relation(fields: [planId], references: [id])
+  catalogNode               CatalogNode?         @relation(fields: [catalogNodeId], references: [id])
 
   @@index([userId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([createdAt])
   @@map("service_requests")
 }
 
@@ -302,6 +318,8 @@ model TdsEntry {
   deductee      TdsDeductee @relation(fields: [deducteeId], references: [id], onDelete: Cascade)
   tdsReturn     TdsReturn   @relation(fields: [returnId], references: [id], onDelete: Cascade)
 
+  @@index([deducteeId])
+  @@index([returnId])
   @@map("tds_entries")
 }
 
@@ -317,6 +335,108 @@ model TdsChallan {
   tdsReturn     TdsReturn @relation(fields: [returnId], references: [id], onDelete: Cascade)
 
   @@map("tds_challans")
+}
+
+model CatalogNode {
+  id                String         @id @default(cuid())
+  name              String
+  slug              String         @unique
+  parentId          String?
+  depth             Int            @default(0)
+  displayOrder      Int            @default(0)
+  isLeaf            Boolean        @default(false)
+  price             Float          @default(0)
+  description       String?
+  requiredDocuments String[]
+  slaHours          Int            @default(24)
+  status            String         @default("active")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  parent            CatalogNode?   @relation("NodeTree", fields: [parentId], references: [id], onDelete: Restrict)
+  children          CatalogNode[]  @relation("NodeTree")
+  serviceRequests   ServiceRequest[]
+
+  @@index([parentId])
+  @@index([depth, status])
+  @@map("catalog_nodes")
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  slug         String        @unique
+  description  String?
+  displayOrder Int           @default(0)
+  status       String        @default("active")
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  subCategories SubCategory[]
+
+  @@map("categories")
+}
+
+model SubCategory {
+  id          String   @id @default(cuid())
+  name        String
+  categoryId  String
+  description String?
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  services    Service[]
+
+  @@map("sub_categories")
+}
+
+model Service {
+  id                String      @id @default(cuid())
+  name              String
+  slug              String      @unique
+  categoryId        String
+  subCategoryId     String
+  description       String?
+  requiredDocuments String[]
+  price             Float       @default(0)
+  slaHours          Int         @default(24)
+  status            String      @default("active")
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+  subCategory       SubCategory @relation(fields: [subCategoryId], references: [id], onDelete: Cascade)
+  plans             ServicePlan[]
+  serviceRequests   ServiceRequest[]
+
+  @@map("services")
+}
+
+model ServicePlan {
+  id             String   @id @default(cuid())
+  serviceId      String
+  planName       String
+  price          Float
+  description    String?
+  turnaroundTime String?
+  status         String   @default("active")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  service        Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  serviceRequests ServiceRequest[]
+
+  @@map("service_plans")
+}
+
+model PhoneOTP {
+  id        String    @id @default(cuid())
+  userId    String
+  phone     String
+  code      String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("phone_otps")
 }
 
 enum UserRole {
@@ -374,22 +494,17 @@ enum InvoiceType {
   PURCHASE
 }
 
-enum ServiceCategory {
-  ITR_FILING
-  GST_FILING
-  TDS_FILING
-  BUSINESS_COMPLIANCE
-}
-
 enum ServiceRequestStatus {
-  PENDING_PAYMENT
-  PAYMENT_CONFIRMED
-  PENDING_DOCUMENTS
+  CREATED
+  PAYMENT_PENDING
+  PAID
+  DOCUMENTS_PENDING
   DOCUMENTS_SUBMITTED
-  UNDER_REVIEW
+  UNDER_PROCESS
   CLARIFICATION_REQUIRED
-  COMPLETED
+  READY_FOR_FILING
   FILED
+  COMPLETED
   REJECTED
 }
 
@@ -410,4 +525,18 @@ enum TdsReturnStatus {
 enum DeducteeCategory {
   COMPANY
   NON_COMPANY
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("info")
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("notifications")
 }

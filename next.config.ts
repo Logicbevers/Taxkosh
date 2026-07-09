@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  typescript: {
-    // Allow production builds even if there are TS errors in generated .next types
-    ignoreBuildErrors: true,
-  },
+    // pdfkit ships font-metrics (.afm) data files it loads via relative paths at
+    // runtime. Bundling it breaks that resolution, so keep it external to the
+    // server bundle and let it require its data files from node_modules normally.
+    serverExternalPackages: ["pdfkit"],
 };
 
 export default nextConfig;

@@ -84,8 +84,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     events: {
         // Log sign-in events for audit trail
-        async signIn({ user, account, profile }) {
-            console.log(`[AUTH-EVENT] Logging LOGIN for ${user.email}`);
+        async signIn({ user, account }) {
             const { logAudit } = await import("@/lib/prisma");
             const { AuditAction } = await import("@prisma/client");
             await logAudit({

@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
             message: "Form 16 parsed successfully (Mock AI Engine)"
         });
 
-    } catch (error: any) {
-        monitoring.captureException(error, { userId: session.user.id });
+    } catch (error: unknown) {
+        monitoring.captureException(error instanceof Error ? error : new Error(String(error)), { userId: session.user.id });
         return NextResponse.json({ error: "Failed to parse document" }, { status: 500 });
     }
 }

@@ -4,7 +4,8 @@ import { prisma } from "@/lib/prisma";
 import z from "zod";
 
 const createRequestSchema = z.object({
-    category: z.enum(["ITR_FILING", "GST_FILING", "TDS_FILING", "BUSINESS_COMPLIANCE"]),
+    serviceId: z.string().optional(),
+    planId: z.string().optional(),
     notes: z.string().optional(),
 });
 
@@ -21,14 +22,15 @@ export async function POST(req: Request) {
         const serviceRequest = await prisma.serviceRequest.create({
             data: {
                 userId: session.user.id,
-                category: body.category,
+                serviceId: body.serviceId,
+                planId: body.planId,
                 notes: body.notes,
-                status: "PENDING_DOCUMENTS",
+                status: "CREATED",
             },
         });
 
         return NextResponse.json(serviceRequest, { status: 201 });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("Failed to create service request:", error);
         if (error instanceof z.ZodError) {
             return NextResponse.json({ error: error.errors }, { status: 400 });

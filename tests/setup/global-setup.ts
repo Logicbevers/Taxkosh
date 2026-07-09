@@ -91,8 +91,7 @@ async function globalSetup(config: FullConfig) {
             create: {
                 id: 'test-service-id',
                 userId: businessUser.id,
-                category: 'ITR_FILING',
-                status: 'PENDING_DOCUMENTS',
+                status: 'DOCUMENTS_PENDING',
                 amount: 49900,
             }
         });

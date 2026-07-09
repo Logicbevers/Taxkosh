@@ -3,8 +3,6 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DocumentType } from "@prisma/client";
 import { uploadToS3 } from "@/lib/s3";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
 
 const ALLOWED_TYPES = [
     "application/pdf",
@@ -34,6 +32,23 @@ export async function POST(req: NextRequest) {
         const documentType = (formData.get("documentType") as string | null) ?? "OTHER";
         const taxReturnId = formData.get("taxReturnId") as string | null;
         const serviceRequestId = formData.get("serviceRequestId") as string | null;
+        const label = formData.get("label") as string | null;
+
+        // Validate serviceRequestId belongs to this user
+        if (serviceRequestId) {
+            const sr = await prisma.serviceRequest.findUnique({ where: { id: serviceRequestId } });
+            if (!sr || sr.userId !== session.user.id) {
+                return NextResponse.json({ error: "Invalid service request" }, { status: 403 });
+            }
+        }
+
+        // Validate taxReturnId belongs to this user (IDOR guard).
+        if (taxReturnId) {
+            const tr = await prisma.taxReturn.findUnique({ where: { id: taxReturnId } });
+            if (!tr || tr.userId !== session.user.id) {
+                return NextResponse.json({ error: "Invalid tax return" }, { status: 403 });
+            }
+        }
 
         if (!file) {
             return NextResponse.json({ error: "No file provided" }, { status: 400 });
@@ -61,27 +76,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Malware detected in file" }, { status: 400 });
         }
 
-        // Upload to S3
-        let s3Key: string | null = null;
-        let storagePath: string | null = null;
-
-        try {
-            s3Key = await uploadToS3(buffer, file.name, file.type);
-        } catch (s3Error) {
-            console.warn("S3 Upload failed (likely missing credentials), falling back to local simulation.", s3Error);
-
-            const uploadDir = path.join(process.cwd(), "public", "uploads", session.user.id);
-            await mkdir(uploadDir, { recursive: true });
-
-            const timestamp = Date.now();
-            const safeFileName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-            const fileName = `${timestamp}_${safeFileName}`;
-            const filePath = path.join(uploadDir, fileName);
-            await writeFile(filePath, buffer);
-
-            s3Key = `simulated-s3/${fileName}`;
-            storagePath = `/uploads/${session.user.id}/${fileName}`;
-        }
+        const s3Key = await uploadToS3(buffer, file.name, file.type);
+        const storagePath: string | null = null;
 
         // Validate documentType enum
         const validDocTypes = Object.values(DocumentType);
@@ -98,6 +94,7 @@ export async function POST(req: NextRequest) {
                 documentType: docType,
                 fileName: file.name,
                 fileSize: file.size,
+                label: label || null,
                 s3Key,
                 mimeType: file.type,
                 isEncrypted: true,

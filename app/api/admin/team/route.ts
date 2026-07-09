@@ -11,9 +11,7 @@ export async function GET() {
 
     const team = await prisma.user.findMany({
         where: {
-            role: {
-                in: [UserRole.TAX_EXECUTIVE, UserRole.SENIOR_REVIEWER]
-            }
+            role: UserRole.ADMIN
         },
         select: {
             id: true,

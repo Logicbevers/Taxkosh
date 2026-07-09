@@ -1,70 +1,80 @@
-import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
-import { UserRole, ServiceRequestStatus } from "@prisma/client";
+import { z } from "zod";
 
-/**
- * Handle individual service request management (status updates, etc.)
- */
+const patchSchema = z.object({
+    name: z.string().min(1).max(200).optional(),
+    slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/).optional(),
+    categoryId: z.string().min(1).optional(),
+    subCategoryId: z.string().min(1).optional(),
+    description: z.string().max(2000).nullable().optional(),
+    requiredDocuments: z.array(z.string()).optional(),
+    price: z.number().min(0).optional(),
+    slaHours: z.number().int().min(1).max(720).optional(),
+    status: z.enum(["active", "inactive"]).optional(),
+});
+
 export async function PATCH(
-    req: NextRequest,
+    req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    const userRole = session?.user?.role;
-    const allowedRoles: UserRole[] = [UserRole.ADMIN, UserRole.TAX_EXECUTIVE, UserRole.SENIOR_REVIEWER];
-
-    if (!session?.user?.id || !allowedRoles.includes(userRole as UserRole)) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     try {
         const { id } = await params;
-        const { status } = await req.json();
-
-        if (!status) {
-            return NextResponse.json({ error: "Status is required" }, { status: 400 });
+        const body = await req.json();
+        const parsed = patchSchema.safeParse(body);
+        if (!parsed.success) {
+            return NextResponse.json(
+                { error: "Invalid input", details: parsed.error.flatten().fieldErrors },
+                { status: 400 }
+            );
         }
 
-        const updatedRequest = await prisma.serviceRequest.update({
+        if (parsed.data.slug) {
+            const existing = await prisma.service.findFirst({
+                where: { slug: parsed.data.slug, NOT: { id } },
+            });
+            if (existing) {
+                return NextResponse.json({ error: "Slug already in use" }, { status: 409 });
+            }
+        }
+
+        const service = await prisma.service.update({
             where: { id },
-            data: { status: status as ServiceRequestStatus }
+            data: parsed.data,
         });
 
-        return NextResponse.json(updatedRequest);
+        return NextResponse.json(service);
     } catch (error) {
-        console.error("Update Service Request Error:", error);
+        console.error("Update Service Error:", error);
         return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }
 
-export async function GET(
-    req: NextRequest,
+export async function DELETE(
+    _req: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAdmin();
+    if (!guard.ok) return guard.response;
 
     try {
         const { id } = await params;
-        const request = await prisma.serviceRequest.findUnique({
-            where: { id },
-            include: {
-                user: true,
-                assignedTo: true,
-                notes: { orderBy: { createdAt: "desc" } },
-                documents: true
-            }
-        });
-
-        if (!request) {
-            return NextResponse.json({ error: "Request not found" }, { status: 404 });
+        const reqCount = await prisma.serviceRequest.count({ where: { serviceId: id } });
+        if (reqCount > 0) {
+            return NextResponse.json(
+                { error: `Cannot delete: ${reqCount} active service requests exist. Deactivate instead.` },
+                { status: 409 }
+            );
         }
 
-        return NextResponse.json(request);
+        await prisma.service.delete({ where: { id } });
+        return NextResponse.json({ success: true });
     } catch (error) {
-        return NextResponse.json({ error: "Internal server error" }, { status: 500 });
+        console.error("Delete Service Error:", error);
+        return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
     }
 }

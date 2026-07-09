@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TdsFormType, TdsReturnStatus } from "@prisma/client";
+import { z } from "zod";
+
+const createTdsReturnSchema = z.object({
+    financialYear: z.string().regex(/^\d{4}-\d{2}$/, "Financial year must be in format YYYY-YY"),
+    quarter: z.number().int().min(1).max(4),
+    formType: z.nativeEnum(TdsFormType),
+});
 
 export async function GET(req: NextRequest) {
     const session = await auth();
@@ -29,20 +36,19 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json();
-        const { financialYear, quarter, formType } = body;
-
-        if (!financialYear || !quarter || !formType) {
-            return NextResponse.json({ error: "FY, Quarter and Form Type are required" }, { status: 400 });
+        const parsed = createTdsReturnSchema.safeParse(body);
+        if (!parsed.success) {
+            return NextResponse.json({ error: "Invalid input", details: parsed.error.flatten().fieldErrors }, { status: 400 });
         }
+        const { financialYear, quarter, formType } = parsed.data;
 
-        // Check if return already exists for this period/type
         const existing = await prisma.tdsReturn.findUnique({
             where: {
                 userId_financialYear_quarter_formType: {
                     userId: session.user.id,
                     financialYear,
                     quarter,
-                    formType: formType as TdsFormType
+                    formType,
                 }
             }
         });
@@ -56,8 +62,8 @@ export async function POST(req: NextRequest) {
                 userId: session.user.id,
                 financialYear,
                 quarter,
-                formType: formType as TdsFormType,
-                status: TdsReturnStatus.DRAFT
+                formType,
+                status: TdsReturnStatus.DRAFT,
             }
         });
 

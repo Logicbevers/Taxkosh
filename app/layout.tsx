@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AuthProvider } from "@/components/auth-provider";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -12,7 +14,7 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "TaxKosh — Smart Indian Tax Filing Platform",
   description:
-    "File Income Tax, GST, TDS & ROC compliance online with expert CA guidance. Trusted by 50,000+ Indian taxpayers. Fast, secure, and 100% compliant.",
+    "File Income Tax, GST, TDS & ROC compliance online with expert CA review. Fast, secure, and compliant.",
   keywords: [
     "income tax filing India",
     "GST filing online",
@@ -31,14 +33,14 @@ export const metadata: Metadata = {
     url: "https://taxkosh.in",
     title: "TaxKosh — Smart Indian Tax Filing Platform",
     description:
-      "File Income Tax, GST, TDS & ROC compliance online. Trusted by 50,000+ Indian taxpayers.",
+      "File Income Tax, GST, TDS & ROC compliance online with expert CA review.",
     siteName: "TaxKosh",
   },
   twitter: {
     card: "summary_large_image",
     title: "TaxKosh — Smart Indian Tax Filing Platform",
     description:
-      "File Income Tax, GST, TDS & ROC compliance online. Trusted by 50,000+ Indian taxpayers.",
+      "File Income Tax, GST, TDS & ROC compliance online with expert CA review.",
     creator: "@taxkosh",
   },
   robots: {
@@ -54,14 +56,17 @@ export default function RootLayout({
   return (
     <html lang="en-IN" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
-          {children}
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+            <Toaster richColors position="top-right" />
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   );
