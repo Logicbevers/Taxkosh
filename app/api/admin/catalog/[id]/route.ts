@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { syncNodeToLegacy, deleteLegacyForNode } from "@/lib/catalog-sync";
 
 const patchSchema = z.object({
     name: z.string().min(1).max(200).optional(),
@@ -47,6 +48,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
             data: parsed.data,
         });
 
+        // Keep the legacy mirror the public site reads in sync.
+        await syncNodeToLegacy(node.id);
+
         return NextResponse.json(node);
     } catch (error: unknown) {
         if ((error as { code?: string }).code === "P2025") {
@@ -80,6 +84,8 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
             return NextResponse.json({ error: "Cannot delete a node with existing service requests." }, { status: 409 });
         }
 
+        // Remove the legacy mirror first (best-effort), then the node.
+        await deleteLegacyForNode(id);
         await prisma.catalogNode.delete({ where: { id } });
         return new NextResponse(null, { status: 204 });
     } catch (error) {

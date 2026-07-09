@@ -3,6 +3,19 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { razorpay, isRazorpayConfigured } from "@/lib/razorpay";
 
+/**
+ * Documents uploaded during the pre-payment purchase flow are created before the
+ * service request exists, so they have serviceRequestId = null. Once the request
+ * is created, claim the user's loose (unassigned) documents for it, otherwise the
+ * admin can never see them and the document-requirement gate blocks processing.
+ */
+async function linkLooseDocuments(userId: string, serviceRequestId: string) {
+    await prisma.document.updateMany({
+        where: { userId, serviceRequestId: null, taxReturnId: null },
+        data: { serviceRequestId },
+    });
+}
+
 export async function POST(req: Request) {
     const session = await auth();
     if (!session?.user?.id) {
@@ -45,6 +58,7 @@ export async function POST(req: Request) {
                     razorpayOrderId: `demo_order_${Date.now()}`,
                 },
             });
+            await linkLooseDocuments(session.user.id, serviceReq.id);
             return NextResponse.json({
                 success: true,
                 demoMode: true,
@@ -90,6 +104,8 @@ export async function POST(req: Request) {
                 razorpayOrderId: orderId,
             },
         });
+
+        await linkLooseDocuments(session.user.id, serviceReq.id);
 
         return NextResponse.json({
             success: true,

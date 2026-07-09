@@ -44,17 +44,23 @@ export async function PATCH(
         const updatedRequest = await prisma.serviceRequest.update({
             where: { id },
             data: { status: status as ServiceRequestStatus },
-            include: { user: true, service: true }
+            // select (not full include) so the user's password hash never leaks in the response.
+            include: { user: { select: { id: true, name: true, email: true } }, service: true }
         });
 
-        // Trigger Notification
-        await triggerStatusNotification({
-            userId: updatedRequest.userId,
-            serviceRequestId: updatedRequest.id,
-            serviceName: updatedRequest.service?.name || "Service",
-            status: updatedRequest.status,
-            userEmail: updatedRequest.user.email
-        });
+        // Notification is best-effort: the status transition has already committed,
+        // so a notification/email failure must not surface as a failed update.
+        try {
+            await triggerStatusNotification({
+                userId: updatedRequest.userId,
+                serviceRequestId: updatedRequest.id,
+                serviceName: updatedRequest.service?.name || "Service",
+                status: updatedRequest.status,
+                userEmail: updatedRequest.user.email
+            });
+        } catch (notifyErr) {
+            console.error("Status notification failed (non-fatal):", notifyErr);
+        }
 
         return NextResponse.json(updatedRequest);
     } catch (error) {

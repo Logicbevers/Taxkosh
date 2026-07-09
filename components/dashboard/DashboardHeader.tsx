@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FileText, Menu } from "lucide-react";
+import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Logo } from "@/components/logo";
 import { NotificationBell } from "./NotificationBell";
 import {
     DropdownMenu,
@@ -57,11 +58,8 @@ export function DashboardHeader({ user }: { user: User }) {
                         </SheetTrigger>
                         <SheetContent side="left" className="w-[300px] sm:w-[400px]">
                             <SheetHeader className="text-left">
-                                <SheetTitle className="flex items-center gap-2 font-bold text-xl">
-                                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                        <FileText className="h-4 w-4" />
-                                    </span>
-                                    TaxKosh
+                                <SheetTitle className="flex items-center">
+                                    <Logo size="md" />
                                 </SheetTitle>
                             </SheetHeader>
                             <nav className="flex flex-col gap-4 mt-8 text-lg font-medium">
@@ -91,13 +89,8 @@ export function DashboardHeader({ user }: { user: User }) {
                         </SheetContent>
                     </Sheet>
 
-                    <Link href="/dashboard" className="flex items-center gap-2 font-bold text-xl tracking-tight">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                            <FileText className="h-4 w-4" />
-                        </span>
-                        <span className="hidden sm:inline-block">
-                            Tax<span className="text-primary">Kosh</span>
-                        </span>
+                    <Link href="/dashboard" className="flex items-center">
+                        <Logo size="md" className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline-flex" />
                     </Link>
 
                     <nav className="hidden md:flex items-center gap-6 text-sm font-medium ml-4">

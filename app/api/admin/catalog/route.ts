@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { syncNodeToLegacy } from "@/lib/catalog-sync";
 
 const createNodeSchema = z.object({
     name: z.string().min(1).max(200),
@@ -63,6 +64,9 @@ export async function POST(req: Request) {
         const node = await prisma.catalogNode.create({
             data: { name, slug, parentId: parentId ?? null, depth, displayOrder, isLeaf, price, description, requiredDocuments, slaHours, status },
         });
+
+        // Mirror into the legacy model the public site + checkout read.
+        await syncNodeToLegacy(node.id);
 
         return NextResponse.json(node, { status: 201 });
     } catch (error: unknown) {

@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { Menu, FileText, ChevronDown, Folder, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, ChevronDown, Folder, LayoutDashboard, LogOut } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -53,12 +54,10 @@ export function NavbarClient({ categories, user }: { categories: Cat[]; user: Na
         return (
             <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                    <div className="flex items-center gap-2 font-bold text-xl tracking-tight">
-                        <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                            <FileText className="h-4 w-4" />
-                        </span>
-                        <span>Tax<span className="text-primary">Kosh</span></span>
-                    </div>
+                    {/* Real link even before hydration so the logo is always clickable. */}
+                    <Link href="/" className="flex items-center">
+                        <Logo size="md" />
+                    </Link>
                 </div>
             </header>
         );
@@ -68,13 +67,8 @@ export function NavbarClient({ categories, user }: { categories: Cat[]; user: Na
         <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-2 font-bold text-xl tracking-tight">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                        <FileText className="h-4 w-4" />
-                    </span>
-                    <span>
-                        Tax<span className="text-primary">Kosh</span>
-                    </span>
+                <Link href="/" className="flex items-center">
+                    <Logo size="md" />
                 </Link>
 
                 {/* Desktop nav */}
@@ -189,11 +183,8 @@ export function NavbarClient({ categories, user }: { categories: Cat[]; user: Na
                         </SheetTrigger>
                         <SheetContent side="right" className="w-72">
                             <div className="flex flex-col gap-6 pt-8">
-                                <Link href="/" className="flex items-center gap-2 font-bold text-lg" onClick={() => setOpen(false)}>
-                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                        <FileText className="h-3.5 w-3.5" />
-                                    </span>
-                                    Tax<span className="text-primary">Kosh</span>
+                                <Link href="/" className="flex items-center" onClick={() => setOpen(false)}>
+                                    <Logo size="md" />
                                 </Link>
                                 <nav className="flex flex-col gap-4 text-sm font-medium">
                                     <div>

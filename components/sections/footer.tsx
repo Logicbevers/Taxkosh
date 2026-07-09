@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { Logo } from "@/components/logo";
 
 // Every link below resolves to a real, existing route to avoid dead-ends.
 const footerLinks = {
@@ -34,11 +34,8 @@ export function Footer() {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-8 py-16">
                     {/* Brand column */}
                     <div className="col-span-2 md:col-span-1">
-                        <Link href="/" className="flex items-center gap-2 font-bold text-lg mb-4">
-                            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                                <FileText className="h-3.5 w-3.5" />
-                            </span>
-                            Tax<span className="text-primary">Kosh</span>
+                        <Link href="/" className="inline-flex items-center mb-4">
+                            <Logo size="md" />
                         </Link>
                         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                             India&apos;s tax &amp; compliance platform — file Income Tax, GST &amp; TDS with expert review.

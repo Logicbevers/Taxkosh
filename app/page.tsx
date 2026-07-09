@@ -5,6 +5,7 @@ import { Pricing } from "@/components/sections/pricing";
 import { WhyTaxKosh } from "@/components/sections/why-taxkosh";
 import { Testimonials } from "@/components/sections/testimonials";
 import { Footer } from "@/components/sections/footer";
+import { Reveal } from "@/components/reveal";
 
 export default function Page() {
   return (
@@ -12,10 +13,10 @@ export default function Page() {
       <Navbar />
       <main>
         <Hero />
-        <Services />
-        <Pricing />
-        <WhyTaxKosh />
-        <Testimonials />
+        <Reveal><Services /></Reveal>
+        <Reveal><Pricing /></Reveal>
+        <Reveal><WhyTaxKosh /></Reveal>
+        <Reveal><Testimonials /></Reveal>
       </main>
       <Footer />
     </>

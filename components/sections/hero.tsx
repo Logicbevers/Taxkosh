@@ -1,124 +1,91 @@
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { BentoGrid, BentoGridItem } from "@/components/ui/bento-grid";
-import {
-    ShieldCheck,
-    FileText,
-    BarChart3,
-    Users,
-    BadgeCheck,
-    Clock,
-    ArrowRight,
-} from "lucide-react";
+import { ArrowRight, ShieldCheck, BadgeCheck, Landmark, CheckCircle2 } from "lucide-react";
 
-const Skeleton = ({ className = "" }: { className?: string }) => (
-    <div
-        className={`flex flex-1 w-full h-full min-h-[6rem] rounded-xl relative overflow-hidden ${className}`}
-    >
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 via-primary/5 to-transparent" />
-        <div className="absolute bottom-3 right-3 opacity-10">
-            <div className="h-16 w-16 rounded-full border-4 border-primary" />
-        </div>
-    </div>
-);
-
-const features = [
-    {
-        title: "ITR Filing in 10 Minutes",
-        description:
-            "Auto-import salary & investment data from Form 26AS. Our AI spots deductions you didn't know existed.",
-        header: <Skeleton className="bg-primary/5 border border-primary/10" />,
-        icon: <FileText className="h-4 w-4 text-primary" />,
-        className: "md:col-span-2",
-    },
-    {
-        title: "GST & TDS Returns",
-        description:
-            "Automated GSTR-1, GSTR-3B & TDS reconciliation. Never miss a due date.",
-        header: <Skeleton className="bg-violet-500/5 border border-violet-500/10" />,
-        icon: <BarChart3 className="h-4 w-4 text-violet-500" />,
-        className: "",
-    },
-    {
-        title: "CA Expert Review",
-        description:
-            "Every return reviewed by a certified Chartered Accountant before submission.",
-        header: <Skeleton className="bg-emerald-500/5 border border-emerald-500/10" />,
-        icon: <BadgeCheck className="h-4 w-4 text-emerald-500" />,
-        className: "",
-    },
-    {
-        title: "Bank-Grade Security",
-        description:
-            "256-bit AES encryption, access-controlled document storage, and zero data sharing with third parties.",
-        header: <Skeleton className="bg-primary/5 border border-primary/10" />,
-        icon: <ShieldCheck className="h-4 w-4 text-primary" />,
-        className: "md:col-span-2",
-    },
-];
-
+/**
+ * Marketing hero — dark emerald band with drifting gradient blobs, a serif
+ * headline, and a tilted, gently-floating "filing status" card as the visual.
+ * Animations are CSS-only (no JS), and honour prefers-reduced-motion.
+ */
 export function Hero() {
     return (
-        <section className="relative min-h-screen flex flex-col items-center justify-center pt-24 pb-20 px-4 overflow-hidden">
-            {/* Background glow */}
-            <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 h-[500px] w-[700px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+        <section className="relative overflow-hidden bg-[oklch(0.20_0.04_170)] text-white">
+            {/* Drifting gradient blobs */}
+            <div className="pointer-events-none absolute -top-36 -right-24 h-[460px] w-[460px] rounded-full bg-primary/50 blur-2xl animate-tk-blob" />
+            <div className="pointer-events-none absolute -bottom-44 -left-20 h-[420px] w-[420px] rounded-full bg-accent-strong/25 blur-3xl animate-tk-blob [animation-delay:-8s]" />
 
-            <div className="relative z-10 flex flex-col items-center text-center max-w-4xl mx-auto mb-14">
-                <Badge variant="secondary" className="mb-5 gap-1.5 px-3 py-1 text-xs font-medium">
-                    <Clock className="h-3 w-3" />
-                    FY 2024–25 Filing Season Now Open
-                </Badge>
+            <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-6 py-24 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:py-32">
+                {/* Copy */}
+                <div className="animate-in fade-in slide-in-from-bottom-4 duration-700">
+                    <span className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-xs font-extrabold tracking-wide text-[oklch(0.85_0.1_165)]">
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" /> Tax filing &amp; consultancy
+                    </span>
 
-                <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-tight mb-6">
-                    File Your Taxes.{" "}
-                    <span className="text-primary">Stress-Free.</span>
-                </h1>
+                    <h1 className="font-serif text-[2.6rem] leading-[1.05] text-balance sm:text-6xl md:text-[66px]">
+                        Taxes, filed properly — by{" "}
+                        <em className="text-accent-strong">people</em>, not just software.
+                    </h1>
 
-                <p className="text-lg text-muted-foreground max-w-2xl mb-8">
-                    India's smartest tax platform for individuals, businesses & CAs.
-                    File ITR, GST, TDS & ROC compliance — guided by AI, reviewed by experts.
-                </p>
+                    <p className="mt-6 max-w-[46ch] text-lg leading-relaxed text-[oklch(0.85_0.02_165)]">
+                        ITR, GST and TDS filing with a real CA reviewing every return. Upload
+                        documents when you&apos;re ready — not before you&apos;ve even chosen a service.
+                    </p>
 
-                <div className="flex flex-col sm:flex-row gap-3">
-                    <Button size="lg" className="gap-2 px-8" asChild>
-                        <Link href="/register">
-                            Start Filing Free <ArrowRight className="h-4 w-4" />
+                    <div className="mt-9 flex flex-wrap gap-3.5">
+                        <Link
+                            href="/services"
+                            className="inline-flex h-[54px] items-center gap-2 rounded-full bg-accent-strong px-8 text-base font-extrabold text-accent-strong-foreground shadow-[0_14px_30px_oklch(0.72_0.14_70/0.35)] transition-transform hover:-translate-y-0.5"
+                        >
+                            Start your ITR filing <ArrowRight className="h-4 w-4" />
                         </Link>
-                    </Button>
-                    <Button size="lg" variant="outline" asChild>
-                        <Link href="#services">Talk to a CA →</Link>
-                    </Button>
+                        <Link
+                            href="#services"
+                            className="inline-flex h-[54px] items-center rounded-full border-[1.5px] border-white/30 px-8 text-base font-extrabold text-white transition-colors hover:bg-white/10"
+                        >
+                            Talk to a CA
+                        </Link>
+                    </div>
+
+                    {/* Trust row */}
+                    <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-[oklch(0.82_0.02_165)]">
+                        <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-accent-strong" /> Bank-grade encryption</span>
+                        <span className="flex items-center gap-1.5"><BadgeCheck className="h-3.5 w-3.5 text-accent-strong" /> CA-reviewed filings</span>
+                        <span className="flex items-center gap-1.5"><Landmark className="h-3.5 w-3.5 text-accent-strong" /> Direct e-filing</span>
+                    </div>
                 </div>
 
-                {/* Trust badges — describe the platform's design, no unverified claims */}
-                <div className="mt-10 flex flex-wrap justify-center gap-6 text-xs text-muted-foreground">
-                    <span className="flex items-center gap-1.5">
-                        <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" /> Bank-grade encryption
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <BadgeCheck className="h-3.5 w-3.5 text-primary" /> CA-reviewed filings
-                    </span>
-                    <span className="flex items-center gap-1.5">
-                        <Users className="h-3.5 w-3.5 text-violet-500" /> No third-party data sharing
-                    </span>
-                </div>
-            </div>
+                {/* Floating filing-status card */}
+                <div className="relative animate-in fade-in zoom-in-95 duration-1000">
+                    <div className="animate-tk-float relative rounded-3xl bg-card p-7 text-card-foreground shadow-[0_40px_80px_oklch(0_0_0/0.35)]">
+                        {/* Amber ₹ badge */}
+                        <div className="absolute -top-5 -left-5 flex h-[68px] w-[68px] -rotate-[8deg] items-center justify-center rounded-[18px] bg-accent-strong text-[28px] font-bold text-accent-strong-foreground shadow-[0_16px_32px_oklch(0_0_0/0.3)]">
+                            ₹
+                        </div>
 
-            {/* Bento Grid */}
-            <div className="relative z-10 w-full max-w-4xl mx-auto">
-                <BentoGrid>
-                    {features.map((f, i) => (
-                        <BentoGridItem
-                            key={i}
-                            title={f.title}
-                            description={f.description}
-                            header={f.header}
-                            icon={f.icon}
-                            className={f.className}
-                        />
-                    ))}
-                </BentoGrid>
+                        <div className="mb-5 flex items-center justify-between">
+                            <span className="text-xs font-extrabold text-muted-foreground">ITR Filing (Salaried)</span>
+                            <span className="inline-flex items-center gap-1 rounded-full bg-status-healthy/15 px-3 py-1 text-[11px] font-extrabold text-status-healthy">
+                                <CheckCircle2 className="h-3 w-3" /> Filed
+                            </span>
+                        </div>
+
+                        <div className="font-serif text-[46px] leading-none text-foreground">
+                            ₹18,240{" "}
+                            <span className="font-sans text-[15px] font-bold text-status-healthy">refund</span>
+                        </div>
+                        <p className="mt-1 text-[13px] text-muted-foreground">Acknowledged by CPC · 2 days ago</p>
+
+                        <div className="mt-5 flex flex-col gap-2.5 border-t border-dashed border-border pt-4 text-[13px]">
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Reviewed by</span>
+                                <span className="font-bold">CA Ramesh Iyer</span>
+                            </div>
+                            <div className="flex justify-between">
+                                <span className="text-muted-foreground">Documents</span>
+                                <span className="font-bold">Form 16, Bank statement</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </section>
     );
