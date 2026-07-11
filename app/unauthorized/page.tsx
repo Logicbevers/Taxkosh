@@ -15,11 +15,11 @@ export default function UnauthorizedPage() {
                     </div>
 
                     <div className="space-y-2">
-                        <h1 className="text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-foreground to-foreground/70">
-                            Access Denied
+                        <h1 className="font-serif text-4xl text-foreground">
+                            Access denied
                         </h1>
                         <p className="text-muted-foreground text-sm leading-relaxed">
-                            This zone is restricted. Your current security clearance level doesn't grant access to this sector.
+                            You don&apos;t have permission to view this page. If you think this is a mistake, contact support.
                         </p>
                     </div>
 

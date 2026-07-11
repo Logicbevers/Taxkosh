@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { AuthTabs } from "@/components/auth/auth-tabs";
 import { registerSchema, type RegisterInput } from "@/lib/validations";
 
 const ROLES = [
@@ -30,6 +31,7 @@ export function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
+    const [autoVerified, setAutoVerified] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
 
     const {
@@ -60,16 +62,21 @@ export function RegisterForm() {
             return;
         }
 
+        setAutoVerified(Boolean(json.autoVerified));
         setSuccess(true);
     };
 
     if (success) {
         return (
-            <div className="bg-card border border-border/60 rounded-2xl p-8 shadow-sm text-center">
-                <div className="text-4xl mb-4">📧</div>
-                <h2 className="text-xl font-bold mb-2">Check your inbox</h2>
+            <div className="text-center">
+                <div className="text-4xl mb-4">{autoVerified ? "🎉" : "📧"}</div>
+                <h2 className="font-serif text-2xl mb-2">
+                    {autoVerified ? "You're all set" : "Check your inbox"}
+                </h2>
                 <p className="text-muted-foreground text-sm mb-6">
-                    We sent a verification email to your address. Click the link inside to activate your account.
+                    {autoVerified
+                        ? "Your account is ready — log in to start your first filing."
+                        : "We sent a verification email to your address. Click the link inside to activate your account."}
                 </p>
                 <Button variant="outline" onClick={() => router.push("/login")}>
                     Go to Login
@@ -79,11 +86,13 @@ export function RegisterForm() {
     }
 
     return (
-        <div className="bg-card border border-border/60 rounded-2xl p-8 shadow-sm">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight">Create your account</h1>
+        <div>
+            <AuthTabs active="signup" />
+
+            <div className="mb-7">
+                <h1 className="font-serif text-3xl text-foreground">Create your account</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Create your TaxKosh account in under a minute
+                    Start filing your taxes in minutes.
                 </p>
             </div>
 
@@ -191,10 +200,6 @@ export function RegisterForm() {
                 </Button>
             </form>
 
-            <p className="text-center text-sm text-muted-foreground mt-6">
-                Already have an account?{" "}
-                <Link href="/login" className="text-primary hover:underline font-medium">Sign in</Link>
-            </p>
         </div>
     );
 }

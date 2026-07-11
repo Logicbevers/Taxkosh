@@ -40,7 +40,7 @@ export default async function CategoryPage({
                         <Folder className="w-6 h-6 text-primary" />
                     </div>
                     <div>
-                        <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">{category.name}</h1>
+                        <h1 className="font-serif text-4xl sm:text-5xl">{category.name}</h1>
                         {category.description && (
                             <p className="text-muted-foreground mt-1">{category.description}</p>
                         )}

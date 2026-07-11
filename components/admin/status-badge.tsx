@@ -20,34 +20,29 @@ export type StatusKind =
     | "OVERDUE"
     | "IN_PROGRESS";
 
+// Tint-fill + solid-text pills using the brand status tokens.
 const STYLE_MAP: Record<StatusKind, string> = {
-    // Success
-    COMPLETED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-    FILED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-    ACTIVE: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+    COMPLETED: "bg-status-healthy/15 text-status-healthy",
+    FILED: "bg-status-healthy/15 text-status-healthy",
+    ACTIVE: "bg-status-healthy/15 text-status-healthy",
 
-    // Info / payment
-    PAID: "bg-teal-500/10 text-teal-600 border-teal-500/20",
-    READY_FOR_FILING: "bg-blue-500/10 text-blue-600 border-blue-500/20",
+    PAID: "bg-primary/12 text-primary",
+    READY_FOR_FILING: "bg-primary/12 text-primary",
 
-    // In progress
-    UNDER_PROCESS: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
-    IN_PROGRESS: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
-    DOCUMENTS_SUBMITTED: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+    UNDER_PROCESS: "bg-status-pending/15 text-status-pending",
+    IN_PROGRESS: "bg-status-pending/15 text-status-pending",
+    DOCUMENTS_SUBMITTED: "bg-status-pending/15 text-status-pending",
 
-    // Warning
-    CLARIFICATION_REQUIRED: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    DOCUMENTS_PENDING: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    PAYMENT_PENDING: "bg-amber-500/10 text-amber-600 border-amber-500/20",
-    PENDING: "bg-amber-500/10 text-amber-600 border-amber-500/20",
+    CLARIFICATION_REQUIRED: "bg-status-pending/15 text-status-pending",
+    DOCUMENTS_PENDING: "bg-status-pending/15 text-status-pending",
+    PAYMENT_PENDING: "bg-status-pending/15 text-status-pending",
+    PENDING: "bg-status-pending/15 text-status-pending",
 
-    // Neutral
-    CREATED: "bg-slate-500/10 text-slate-500 border-slate-500/20",
-    INACTIVE: "bg-slate-500/10 text-slate-500 border-slate-500/20",
+    CREATED: "bg-muted text-muted-foreground",
+    INACTIVE: "bg-muted text-muted-foreground",
 
-    // Danger
-    REJECTED: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-    OVERDUE: "bg-rose-500/10 text-rose-600 border-rose-500/20 animate-pulse",
+    REJECTED: "bg-destructive/12 text-destructive",
+    OVERDUE: "bg-destructive/12 text-destructive",
 };
 
 interface StatusBadgeProps {
@@ -56,13 +51,18 @@ interface StatusBadgeProps {
     children?: React.ReactNode;
 }
 
+// "UNDER_PROCESS" → "Under process"
+function sentenceCase(s: string): string {
+    return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase().replace(/_/g, " ");
+}
+
 export function StatusBadge({ status, className, children }: StatusBadgeProps) {
-    const style = STYLE_MAP[status as StatusKind] ?? "bg-slate-500/10 text-slate-500 border-slate-500/20";
-    const label = children ?? status.replace(/_/g, " ");
+    const style = STYLE_MAP[status as StatusKind] ?? "bg-muted text-muted-foreground";
+    const label = children ?? sentenceCase(status);
     return (
         <span
             className={cn(
-                "inline-flex items-center px-3 h-6 text-[9px] font-black tracking-wide uppercase whitespace-nowrap border-2 rounded-xl",
+                "inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold",
                 style,
                 className
             )}

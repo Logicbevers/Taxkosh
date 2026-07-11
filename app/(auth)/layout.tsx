@@ -1,5 +1,5 @@
-import { FileText } from "lucide-react";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 export default function AuthLayout({
     children,
@@ -7,23 +7,40 @@ export default function AuthLayout({
     children: React.ReactNode;
 }) {
     return (
-        <div className="min-h-screen bg-muted/30 flex flex-col items-center justify-center p-4">
-            <Link
-                href="/"
-                className="flex items-center gap-2 font-bold text-xl mb-8"
-            >
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <FileText className="h-4 w-4" />
-                </span>
-                Tax<span className="text-primary">Kosh</span>
-            </Link>
-            <div className="w-full max-w-md">{children}</div>
-            <p className="mt-8 text-xs text-muted-foreground text-center">
-                © {new Date().getFullYear()} TaxKosh Technologies Pvt. Ltd. &nbsp;·&nbsp;{" "}
-                <Link href="/privacy-policy" className="hover:underline">Privacy</Link>
-                &nbsp;·&nbsp;
-                <Link href="/terms" className="hover:underline">Terms</Link>
-            </p>
+        <div className="grid min-h-screen bg-background lg:grid-cols-[0.85fr_1fr]">
+            {/* Left brand panel — dark emerald with drifting blobs */}
+            <div className="relative hidden flex-col justify-between overflow-hidden bg-[oklch(0.20_0.04_170)] p-12 lg:flex">
+                <div className="pointer-events-none absolute -top-32 -right-28 h-[380px] w-[380px] rounded-full bg-primary/40 blur-2xl animate-tk-blob" />
+                <div className="pointer-events-none absolute -bottom-36 -left-20 h-[320px] w-[320px] rounded-full bg-accent-strong/20 blur-3xl animate-tk-blob [animation-delay:-8s]" />
+
+                <Link href="/" className="relative inline-flex">
+                    <Logo size="md" inverted />
+                </Link>
+
+                <div className="relative">
+                    <p className="max-w-[20ch] font-serif text-[34px] leading-tight text-white">
+                        Taxes, filed properly — by people, not just software.
+                    </p>
+                    <p className="mt-4 max-w-[34ch] text-sm leading-relaxed text-[oklch(0.78_0.02_165)]">
+                        Every return reviewed by a licensed CA. Fixed pricing, no surprises.
+                    </p>
+                </div>
+
+                <div className="relative text-xs text-[oklch(0.65_0.02_165)]">
+                    © {new Date().getFullYear()} TaxKosh Technologies Pvt. Ltd.
+                </div>
+            </div>
+
+            {/* Right form panel */}
+            <div className="flex items-center justify-center p-6 sm:p-12">
+                <div className="w-full max-w-[380px]">
+                    {/* Logo shown on mobile where the brand panel is hidden */}
+                    <Link href="/" className="mb-8 inline-flex lg:hidden">
+                        <Logo size="md" />
+                    </Link>
+                    {children}
+                </div>
+            </div>
         </div>
     );
 }

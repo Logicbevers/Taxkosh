@@ -62,7 +62,7 @@ export default async function ServiceDetailPage({
                     <Clock className="w-3 h-3 mr-1" />
                     {service.slaHours}h SLA
                 </Badge>
-                <h1 className="text-3xl sm:text-5xl font-bold tracking-tight mb-3">{service.name}</h1>
+                <h1 className="font-serif text-4xl sm:text-5xl mb-3">{service.name}</h1>
                 {service.description && (
                     <p className="text-base sm:text-lg text-muted-foreground max-w-3xl">
                         {service.description}

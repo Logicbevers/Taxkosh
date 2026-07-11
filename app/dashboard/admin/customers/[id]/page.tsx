@@ -42,7 +42,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         FILED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
         COMPLETED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
         REJECTED: "bg-rose-500/10 text-rose-600 border-rose-500/20",
-        UNDER_PROCESS: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+        UNDER_PROCESS: "bg-status-pending/15 text-status-pending border-transparent",
         PAID: "bg-teal-500/10 text-teal-600 border-teal-500/20",
         PAYMENT_PENDING: "bg-amber-500/10 text-amber-600 border-amber-500/20",
     };

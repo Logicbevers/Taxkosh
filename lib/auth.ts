@@ -7,6 +7,18 @@ import { prisma } from "@/lib/prisma";
 import { loginSchema } from "@/lib/validations";
 import type { UserRole } from "@prisma/client";
 
+/**
+ * Google OAuth is optional: only register the provider when real credentials
+ * are configured. Placeholder values from .env.example (e.g. "your-google-…")
+ * are treated as unconfigured so the sign-in button can be hidden instead of
+ * dead-ending on an OAuth error page.
+ */
+export const googleAuthEnabled = Boolean(
+    process.env.AUTH_GOOGLE_ID &&
+    process.env.AUTH_GOOGLE_SECRET &&
+    !/your|placeholder|example|<|>/i.test(process.env.AUTH_GOOGLE_ID)
+);
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
     adapter: PrismaAdapter(prisma),
     session: { strategy: "jwt" },
@@ -15,10 +27,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         error: "/login",
     },
     providers: [
-        Google({
-            clientId: process.env.AUTH_GOOGLE_ID,
-            clientSecret: process.env.AUTH_GOOGLE_SECRET,
-        }),
+        ...(googleAuthEnabled
+            ? [
+                Google({
+                    clientId: process.env.AUTH_GOOGLE_ID,
+                    clientSecret: process.env.AUTH_GOOGLE_SECRET,
+                }),
+            ]
+            : []),
         Credentials({
             name: "credentials",
             credentials: {

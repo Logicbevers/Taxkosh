@@ -1,36 +1,61 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-    FileText,
-    ArrowRight,
-    AlertCircle,
-    CheckCircle2,
-    Clock,
-    PlusCircle,
-    LayoutDashboard,
-    Briefcase,
-    Receipt
-} from "lucide-react";
+import { Check, PlusCircle, FileText } from "lucide-react";
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { ServiceRequestStatus } from "@prisma/client";
 
-const STATUS_CONFIG: Record<ServiceRequestStatus, { label: string, color: string, icon: any }> = {
-    CREATED: { label: "Initialized", color: "text-slate-600 bg-slate-50 border-slate-200", icon: Clock },
-    PAYMENT_PENDING: { label: "Action: Payment", color: "text-amber-600 bg-amber-50 border-amber-200", icon: Clock },
-    PAID: { label: "Payment Success", color: "text-blue-600 bg-blue-50 border-blue-200", icon: CheckCircle2 },
-    DOCUMENTS_PENDING: { label: "Action: Upload Docs", color: "text-amber-600 bg-amber-50 border-amber-200", icon: AlertCircle },
-    DOCUMENTS_SUBMITTED: { label: "Under Review", color: "text-indigo-600 bg-indigo-50 border-indigo-200", icon: Clock },
-    UNDER_PROCESS: { label: "Processing", color: "text-indigo-600 bg-indigo-50 border-indigo-200", icon: Clock },
-    CLARIFICATION_REQUIRED: { label: "Action: Clarify", color: "text-destructive bg-destructive/5 border-destructive/20", icon: AlertCircle },
-    READY_FOR_FILING: { label: "Ready", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
-    FILED: { label: "Success: Filed", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
-    COMPLETED: { label: "Completed", color: "text-emerald-600 bg-emerald-50 border-emerald-200", icon: CheckCircle2 },
-    REJECTED: { label: "Rejected", color: "text-destructive bg-destructive/5 border-destructive/20", icon: AlertCircle },
+/** Status → pill label + tint, using the brand status tokens. */
+const STATUS_TONE: Record<ServiceRequestStatus, { label: string; cls: string }> = {
+    CREATED: { label: "Created", cls: "bg-muted text-muted-foreground" },
+    PAYMENT_PENDING: { label: "Payment pending", cls: "bg-status-pending/15 text-status-pending" },
+    PAID: { label: "Paid", cls: "bg-primary/12 text-primary" },
+    DOCUMENTS_PENDING: { label: "Documents pending", cls: "bg-status-pending/15 text-status-pending" },
+    DOCUMENTS_SUBMITTED: { label: "Under review", cls: "bg-status-pending/15 text-status-pending" },
+    UNDER_PROCESS: { label: "Under review", cls: "bg-status-pending/15 text-status-pending" },
+    CLARIFICATION_REQUIRED: { label: "Needs clarification", cls: "bg-destructive/12 text-destructive" },
+    READY_FOR_FILING: { label: "Ready to file", cls: "bg-primary/12 text-primary" },
+    FILED: { label: "Filed", cls: "bg-status-healthy/15 text-status-healthy" },
+    COMPLETED: { label: "Completed", cls: "bg-status-healthy/15 text-status-healthy" },
+    REJECTED: { label: "Rejected", cls: "bg-destructive/12 text-destructive" },
 };
+
+const FILING_STEPS = ["Documents uploaded", "CA review", "Filed & acknowledged"];
+
+/** Which step the request is currently on (0-based; 3 = fully done). */
+function currentStep(status: ServiceRequestStatus): number {
+    switch (status) {
+        case "FILED":
+        case "COMPLETED":
+            return 3;
+        case "READY_FOR_FILING":
+            return 2;
+        case "DOCUMENTS_SUBMITTED":
+        case "UNDER_PROCESS":
+        case "CLARIFICATION_REQUIRED":
+            return 1;
+        default:
+            return 0;
+    }
+}
+
+function StatusPill({ status }: { status: ServiceRequestStatus }) {
+    const t = STATUS_TONE[status];
+    return (
+        <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold", t.cls)}>
+            {t.label}
+        </span>
+    );
+}
+
+function timeAgo(date: Date): string {
+    const days = Math.floor((Date.now() - date.getTime()) / 86_400_000);
+    if (days <= 0) return "today";
+    if (days === 1) return "1 day ago";
+    if (days < 30) return `${days} days ago`;
+    return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
 
 export default async function DashboardPage() {
     const session = await auth();
@@ -40,138 +65,161 @@ export default async function DashboardPage() {
         where: { userId: session.user.id },
         include: { service: true },
         orderBy: { updatedAt: "desc" },
-        take: 5
     });
 
-    const actionRequired = requests.filter(r =>
-        ([ServiceRequestStatus.DOCUMENTS_PENDING, ServiceRequestStatus.CLARIFICATION_REQUIRED, ServiceRequestStatus.PAYMENT_PENDING] as ServiceRequestStatus[]).includes(r.status)
+    const DONE: ServiceRequestStatus[] = ["FILED", "COMPLETED", "REJECTED"];
+    const active = requests.find((r) => !DONE.includes(r.status));
+    const attention = requests.find((r) =>
+        (["DOCUMENTS_PENDING", "CLARIFICATION_REQUIRED", "PAYMENT_PENDING"] as ServiceRequestStatus[]).includes(r.status),
     );
 
+    const firstName = session.user.name?.split(" ")[0] ?? "there";
+
     return (
-        <div className="container p-6 space-y-8 max-w-6xl mx-auto">
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="mx-auto max-w-6xl px-6 py-10 sm:px-8">
+            {/* Header */}
+            <div className="mb-9 flex flex-wrap items-start justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Welcome back, {session.user.name?.split(" ")[0]}</h1>
-                    <p className="text-muted-foreground mt-1">Here's an overview of your tax and compliance profile.</p>
+                    <p className="mb-2 text-[11px] font-bold uppercase tracking-wider text-primary">Dashboard</p>
+                    <h1 className="font-serif text-4xl text-foreground">Welcome back, {firstName}</h1>
                 </div>
-                <Button asChild className="gap-2 shadow-sm">
-                    <Link href="/dashboard/services">
-                        <PlusCircle className="w-4 h-4" /> Start New Service
-                    </Link>
-                </Button>
+                <Button href="/dashboard/services" />
             </div>
 
-            {/* High Priority Alerts */}
-            {actionRequired.length > 0 && (
-                <div className="grid gap-4">
-                    {actionRequired.map(req => (
-                        <Link key={req.id} href={`/dashboard/services/${req.id}`}>
-                            <div className="flex items-center justify-between p-4 rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-900/10 dark:border-amber-900/30 hover:shadow-md transition-all group">
-                                <div className="flex items-center gap-4">
-                                    <div className="h-10 w-10 rounded-full bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                                        <AlertCircle className="h-5 w-5 text-amber-600" />
+            {/* Active filing card with step tracker */}
+            {active ? (
+                <div className="mb-7 rounded-2xl border border-border bg-card p-6">
+                    <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                            <div className="text-base font-bold text-foreground">{active.service?.name ?? "Service request"}</div>
+                            <div className="mt-0.5 text-[13px] text-muted-foreground">Started {timeAgo(active.createdAt)}</div>
+                        </div>
+                        <StatusPill status={active.status} />
+                    </div>
+
+                    <ol className="flex items-start">
+                        {FILING_STEPS.map((label, i) => {
+                            const step = currentStep(active.status);
+                            const done = i < step;
+                            const isCurrent = i === step;
+                            return (
+                                <li key={label} className="contents">
+                                    <div className="flex flex-1 flex-col items-center gap-2 text-center">
+                                        <div
+                                            className={cn(
+                                                "flex h-8 w-8 items-center justify-center rounded-full text-[13px] font-bold",
+                                                done || isCurrent
+                                                    ? "bg-primary text-primary-foreground"
+                                                    : "bg-muted text-muted-foreground",
+                                            )}
+                                        >
+                                            {done ? <Check className="h-4 w-4" /> : i + 1}
+                                        </div>
+                                        <span
+                                            className={cn(
+                                                "text-[11px] font-bold",
+                                                done || isCurrent ? "text-foreground" : "text-muted-foreground",
+                                            )}
+                                        >
+                                            {label}
+                                        </span>
                                     </div>
-                                    <div>
-                                        <p className="font-semibold text-amber-900 dark:text-amber-100">
-                                            Action Required: {req.service?.name || "Service Request"}
-                                        </p>
-                                        <p className="text-sm text-amber-700/80 dark:text-amber-400">
-                                            {req.status === ServiceRequestStatus.CLARIFICATION_REQUIRED
-                                                ? "Our expert needs more information to proceed."
-                                                : "Please complete your document submission."}
-                                        </p>
-                                    </div>
-                                </div>
-                                <ArrowRight className="w-5 h-5 text-amber-400 group-hover:translate-x-1 transition-transform" />
-                            </div>
-                        </Link>
-                    ))}
+                                    {i < FILING_STEPS.length - 1 && (
+                                        <div className={cn("mt-4 h-0.5 flex-1", i < step ? "bg-primary" : "bg-border")} />
+                                    )}
+                                </li>
+                            );
+                        })}
+                    </ol>
+                </div>
+            ) : (
+                <div className="mb-7 rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+                    <FileText className="mx-auto mb-3 h-10 w-10 text-muted-foreground/30" />
+                    <p className="text-sm text-muted-foreground">No active filing yet.</p>
+                    <Link href="/dashboard/services" className="mt-2 inline-block text-sm font-bold text-primary hover:underline">
+                        Start your first filing →
+                    </Link>
                 </div>
             )}
 
-            <div className="grid md:grid-cols-3 gap-6">
-                {/* Active Services List */}
-                <Card className="md:col-span-2 shadow-sm overflow-hidden border-border/60">
-                    <CardHeader className="bg-muted/30 pb-4">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-lg">Recent Service Requests</CardTitle>
-                            <Button variant="ghost" size="sm" asChild className="text-primary hover:text-primary/80">
-                                <Link href="/dashboard/services">View All</Link>
-                            </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
+            <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+                {/* Filings table */}
+                <div>
+                    <p className="mb-3 text-[13px] font-bold text-foreground">My filings</p>
+                    <div className="overflow-hidden rounded-2xl border border-border bg-card">
                         {requests.length === 0 ? (
-                            <div className="p-12 text-center">
-                                <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-20" />
-                                <p className="text-muted-foreground">No active service requests found.</p>
-                                <Button variant="link" asChild><Link href="/dashboard/services">Start your first service</Link></Button>
-                            </div>
+                            <div className="p-10 text-center text-sm text-muted-foreground">No filings yet.</div>
                         ) : (
-                            <div className="divide-y divide-border/40">
-                                {requests.map(req => {
-                                    const config = STATUS_CONFIG[req.status];
-                                    const StatusIcon = config?.icon || FileText;
-                                    return (
-                                        <Link key={req.id} href={`/dashboard/services/${req.id}`} className="block hover:bg-muted/20 transition-colors">
-                                            <div className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="h-10 w-10 rounded-lg bg-primary/5 flex items-center justify-center">
-                                                        <FileText className="h-5 w-5 text-primary" />
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium">{req.service?.name}</p>
-                                                        <p className="text-xs text-muted-foreground">Updated {new Date(req.updatedAt).toLocaleDateString()}</p>
-                                                    </div>
-                                                </div>
-                                                <Badge variant="outline" className={`px-2.5 py-1 flex items-center gap-1.5 ${config?.color || ''} border-none font-medium`}>
-                                                    <StatusIcon className="w-3.5 h-3.5" />
-                                                    {config?.label || req.status}
-                                                </Badge>
-                                            </div>
-                                        </Link>
-                                    );
-                                })}
-                            </div>
+                            <table className="w-full border-collapse">
+                                <thead>
+                                    <tr className="bg-muted">
+                                        {["Service", "Amount", "Status"].map((h) => (
+                                            <th key={h} className="border-b border-border px-4 py-3 text-left text-[11px] font-bold text-muted-foreground">
+                                                {h}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {requests.slice(0, 8).map((r) => (
+                                        <tr key={r.id} className="transition-colors hover:bg-muted/40">
+                                            <td className="border-b border-border px-4 py-3.5 text-[13px]">
+                                                <Link href={`/dashboard/services/${r.id}`} className="font-semibold hover:text-primary">
+                                                    {r.service?.name ?? "Service request"}
+                                                </Link>
+                                            </td>
+                                            <td className="border-b border-border px-4 py-3.5 text-[13px] tabular-nums">
+                                                ₹{(r.amount / 100).toLocaleString("en-IN")}
+                                            </td>
+                                            <td className="border-b border-border px-4 py-3.5">
+                                                <StatusPill status={r.status} />
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
                         )}
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
 
-                {/* Role Specific Shortcuts */}
-                <div className="space-y-6">
-                    <Card className="shadow-sm border-border/60">
-                        <CardHeader>
-                            <CardTitle className="text-base">Tax Tools</CardTitle>
-                        </CardHeader>
-                        <CardContent className="grid gap-3 p-4 pt-0">
-                            {[
-                                { icon: LayoutDashboard, label: "ITR Builder", sub: "Plan & File individual taxes", color: "text-blue-500", bg: "bg-blue-50", href: "/dashboard/individual" },
-                                { icon: Briefcase, label: "Business Hub", sub: "GSTIN details & Invoices", color: "text-violet-500", bg: "bg-violet-50", href: "/dashboard/business" },
-                                { icon: Receipt, label: "Tax Planner", sub: "Maximize deductions", color: "text-emerald-500", bg: "bg-emerald-50", href: "#" },
-                            ].map((tool) => (
-                                <Link key={tool.label} href={tool.href} className="flex items-center gap-3 p-3 rounded-xl border border-transparent hover:border-border hover:bg-muted/30 transition-all group">
-                                    <div className={`h-10 w-10 rounded-lg ${tool.bg} flex items-center justify-center shrink-0`}>
-                                        <tool.icon className={`h-5 w-5 ${tool.color}`} />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-semibold truncate">{tool.label}</p>
-                                        <p className="text-[11px] text-muted-foreground truncate">{tool.sub}</p>
-                                    </div>
-                                    <ArrowRight className="w-4 h-4 text-muted-foreground/30 group-hover:text-primary group-hover:translate-x-1 transition-all" />
-                                </Link>
-                            ))}
-                        </CardContent>
-                    </Card>
-
-                    <Card className="bg-primary/5 border-primary/10 shadow-none">
-                        <CardContent className="p-6">
-                            <h3 className="font-bold text-sm mb-2">Need Expert Help?</h3>
-                            <p className="text-xs text-muted-foreground mb-4 leading-relaxed">Our tax professionals are available for 1-on-1 consultations to optimize your liability.</p>
-                            <Button size="sm" variant="outline" className="w-full bg-background font-semibold">Book a Session</Button>
-                        </CardContent>
-                    </Card>
+                {/* Needs attention */}
+                <div>
+                    <p className="mb-3 text-[13px] font-bold text-foreground">Needs attention</p>
+                    {attention ? (
+                        <div className="flex flex-col gap-2.5 rounded-2xl border border-status-pending/25 bg-status-pending/8 p-5">
+                            <div className="text-[13px] font-bold text-foreground">
+                                {attention.status === "PAYMENT_PENDING" ? "Payment pending" : "Action required"}
+                            </div>
+                            <p className="text-[12.5px] leading-relaxed text-muted-foreground">
+                                {attention.status === "CLARIFICATION_REQUIRED"
+                                    ? "Your CA needs more information to continue the review."
+                                    : attention.status === "PAYMENT_PENDING"
+                                        ? "Complete your payment to start this filing."
+                                        : "Upload the required documents so your CA can proceed."}
+                            </p>
+                            <Link href={`/dashboard/services/${attention.id}`} className="text-[12.5px] font-bold text-primary hover:underline">
+                                {attention.status === "PAYMENT_PENDING" ? "Complete payment →" : "Upload now →"}
+                            </Link>
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-border bg-card p-5 text-[13px] text-muted-foreground">
+                            You&apos;re all caught up — nothing needs your attention.
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
+    );
+}
+
+/** Primary "New filing" CTA. */
+function Button({ href }: { href: string }) {
+    return (
+        <Link
+            href={href}
+            className="inline-flex h-11 items-center gap-2 rounded-[10px] bg-primary px-5 text-sm font-bold text-primary-foreground transition-transform hover:-translate-y-0.5"
+        >
+            <PlusCircle className="h-4 w-4" /> New filing
+        </Link>
     );
 }

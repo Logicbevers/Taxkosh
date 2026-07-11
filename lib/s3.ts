@@ -12,7 +12,13 @@ const s3Region = process.env.AWS_REGION ?? "ap-south-1";
  */
 export const S3_CONFIGURED = Boolean(process.env.AWS_S3_BUCKET_NAME);
 
-const LOCAL_ROOT = path.join(process.cwd(), ".local-uploads");
+// On serverless hosts (Vercel/Lambda) the deploy directory is read-only — only
+// /tmp is writable, and it is EPHEMERAL (files vanish between invocations).
+// The local fallback is a dev/demo convenience; production should set the AWS
+// env vars so uploads persist in S3.
+const LOCAL_ROOT = process.env.VERCEL
+    ? path.join("/tmp", "taxkosh-uploads")
+    : path.join(process.cwd(), ".local-uploads");
 
 // Resolve an s3Key to a local path, guarding against path traversal.
 function localPathForKey(s3Key: string): string {

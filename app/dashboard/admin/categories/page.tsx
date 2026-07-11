@@ -216,7 +216,7 @@ export default function CategoriesPage() {
         <div className="p-8 space-y-8 max-w-7xl mx-auto pb-24 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 via-slate-700 to-slate-400 bg-clip-text text-transparent dark:from-white dark:to-slate-400 uppercase">
+                    <h1 className="font-serif text-[32px] text-foreground">
                         Taxonomy Engine
                     </h1>
                     <p className="text-muted-foreground mt-2 text-sm font-medium tracking-tight">
@@ -482,8 +482,8 @@ export default function CategoriesPage() {
                     <div className="bg-slate-900 px-8 pt-8 pb-6 border-b border-white/[0.06]">
                         <DialogHeader>
                             <div className="flex items-center gap-3 mb-1">
-                                <div className="h-8 w-8 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-                                    <FolderOpen className="w-4 h-4 text-indigo-400" />
+                                <div className="h-8 w-8 rounded-xl bg-primary/15 border border-primary/25 flex items-center justify-center">
+                                    <FolderOpen className="w-4 h-4 text-primary" />
                                 </div>
                                 <DialogTitle className="text-white font-black text-sm uppercase tracking-[0.2em]">
                                     {editingSubCategory ? "Modify Branch Node" : "Add Sub-Taxonomy Node"}

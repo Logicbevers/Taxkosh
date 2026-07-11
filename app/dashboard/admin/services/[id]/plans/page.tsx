@@ -176,7 +176,7 @@ export default function ServicePlansPage({ params }: { params: Promise<{ id: str
                         <Link href="/dashboard/admin/services"><ArrowLeft className="w-4 h-4" /></Link>
                     </Button>
                     <div>
-                        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent dark:from-white dark:to-slate-400">
+                        <h1 className="font-serif text-3xl text-foreground">
                             Service Tiers
                         </h1>
                         {service ? (
@@ -233,7 +233,7 @@ export default function ServicePlansPage({ params }: { params: Promise<{ id: str
                                 </div>
                                 <CardTitle className="text-xl mt-4 font-bold tracking-tight text-slate-900 dark:text-slate-100">{plan.planName}</CardTitle>
                                 <div className="flex items-baseline gap-1 mt-2">
-                                    <span className="text-3xl font-black tracking-tight flex items-center bg-gradient-to-br from-primary to-primary/80 bg-clip-text text-transparent">
+                                    <span className="font-serif text-3xl flex items-center text-primary">
                                         <IndianRupee className="w-4 h-4 mr-1 text-primary" /> {plan.price.toLocaleString()}
                                     </span>
                                     <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">Execution Unit</span>

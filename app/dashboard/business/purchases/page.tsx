@@ -97,7 +97,7 @@ export default function PurchasesPage() {
                                         </td>
                                         <td className="px-6 py-4 text-right">₹{inv.totalTaxableValue.toLocaleString()}</td>
                                         <td className="px-6 py-4 text-right">₹{(inv.totalCgst + inv.totalSgst + inv.totalIgst).toLocaleString()}</td>
-                                        <td className="px-6 py-4 text-right font-bold text-violet-600 dark:text-violet-400">
+                                        <td className="px-6 py-4 text-right font-bold text-primary">
                                             ₹{inv.totalAmount.toLocaleString()}
                                         </td>
                                     </tr>

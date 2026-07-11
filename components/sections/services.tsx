@@ -8,7 +8,7 @@ import { getPublicCategories } from "@/lib/catalog";
 // Any category not in this map falls back to a generic Folder icon.
 const iconMap: Record<string, { icon: React.ReactNode; tag?: string }> = {
     "income-tax": { icon: <FileText className="h-6 w-6 text-primary" />, tag: "Most Popular" },
-    "gst": { icon: <Receipt className="h-6 w-6 text-violet-500" /> },
+    "gst": { icon: <Receipt className="h-6 w-6 text-accent-strong" /> },
     "tds": { icon: <Landmark className="h-6 w-6 text-emerald-500" /> },
     "tds-compliance": { icon: <Landmark className="h-6 w-6 text-emerald-500" /> },
     "roc": { icon: <Building2 className="h-6 w-6 text-amber-500" /> },
@@ -44,7 +44,7 @@ export async function Services() {
                     <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3">
                         What We Do
                     </p>
-                    <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+                    <h2 className="font-serif text-4xl sm:text-5xl mb-4">
                         Complete Tax & Compliance Solutions
                     </h2>
                     <p className="text-muted-foreground max-w-xl mx-auto">

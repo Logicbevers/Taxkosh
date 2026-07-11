@@ -26,7 +26,12 @@ export function Logo({ size = "md", inverted = false, showMark = true, className
     return (
         <span className={cn("inline-flex items-center gap-2.5 font-bold tracking-tight select-none", className)}>
             {showMark && (
-                <span className={cn("flex items-center justify-center bg-primary text-primary-foreground shrink-0", s.box)}>
+                <span className={cn(
+                    "flex items-center justify-center shrink-0",
+                    s.box,
+                    // On dark surfaces the emerald mark would blend in, so use the amber mark.
+                    inverted ? "bg-accent-strong text-accent-strong-foreground" : "bg-primary text-primary-foreground",
+                )}>
                     <span className={cn("font-sans font-bold leading-none", s.rupee)}>₹</span>
                 </span>
             )}

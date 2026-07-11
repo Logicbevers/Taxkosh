@@ -15,7 +15,7 @@ const pillars = [
             "Your data is encrypted with 256-bit AES at rest and in transit, hosted in the AWS Mumbai region with access-controlled document storage. We never sell your data.",
     },
     {
-        icon: <Users className="h-6 w-6 text-violet-500" />,
+        icon: <Users className="h-6 w-6 text-accent-strong" />,
         title: "CA Expert Review",
         description:
             "Every return is reviewed by a ICAI-registered Chartered Accountant before submission. Get a 30-minute CA consultation included in every Business & Pro plan.",
@@ -39,7 +39,7 @@ export function WhyTaxKosh() {
                     <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3">
                         Why TaxKosh
                     </p>
-                    <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+                    <h2 className="font-serif text-4xl sm:text-5xl mb-4">
                         Built for the Indian Taxpayer
                     </h2>
                     <p className="text-muted-foreground max-w-xl mx-auto">

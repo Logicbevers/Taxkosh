@@ -59,17 +59,17 @@ export function ServiceCatalog({ categories }: { categories: any[] }) {
                 
                 <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                     {activeCategory?.subCategories.map((sub: any) => (
-                        <Card key={sub.id} className="cursor-pointer hover:border-indigo-500/50 transition-all hover:shadow-md group" onClick={() => setSelectedSubCategoryId(sub.id)}>
+                        <Card key={sub.id} className="cursor-pointer hover:border-primary/50 transition-all hover:shadow-md group" onClick={() => setSelectedSubCategoryId(sub.id)}>
                             <CardHeader className="pb-4">
-                                <div className="h-10 w-10 bg-indigo-500/10 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
-                                    <FolderOpen className="w-5 h-5 text-indigo-500" />
+                                <div className="h-10 w-10 bg-primary/10 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                                    <FolderOpen className="w-5 h-5 text-primary" />
                                 </div>
                                 <CardTitle className="text-lg">{sub.name}</CardTitle>
                                 <CardDescription className="line-clamp-2 mt-2">{sub.description || "Sub-category services"}</CardDescription>
                             </CardHeader>
                             <CardFooter className="pt-0 flex items-center justify-between text-xs text-muted-foreground font-medium uppercase tracking-wider">
                                 <span>{sub.services.length} Services</span>
-                                <ChevronRight className="w-4 h-4 text-indigo-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+                                <ChevronRight className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
                             </CardFooter>
                         </Card>
                     ))}

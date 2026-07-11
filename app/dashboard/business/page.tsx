@@ -60,7 +60,7 @@ export default async function BusinessDashboard() {
                 <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                     <div>
                         <h1 className="text-2xl font-bold">Business Hub</h1>
-                        <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-violet-500/10 text-violet-600 dark:text-violet-400 px-2.5 py-1 rounded-full mt-2">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-medium bg-accent-strong/15 text-accent-strong px-2.5 py-1 rounded-full mt-2">
                             <Building2 className="h-3 w-3" /> {isGstSetup ? `GSTIN: ${profile.gstin}` : "Business Owner"}
                         </span>
                     </div>

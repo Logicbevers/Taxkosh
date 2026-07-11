@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
+import { AuthTabs } from "@/components/auth/auth-tabs";
 import { loginSchema, type LoginInput } from "@/lib/validations";
 
-export function LoginForm() {
+export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }) {
     const router = useRouter();
     const searchParams = useSearchParams();
     // Default to the home page so users land on the browsable site, not the
@@ -78,11 +79,13 @@ export function LoginForm() {
     };
 
     return (
-        <div className="bg-card border border-border/60 rounded-2xl p-8 shadow-sm">
-            <div className="mb-6">
-                <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
+        <div>
+            <AuthTabs active="login" />
+
+            <div className="mb-7">
+                <h1 className="font-serif text-3xl text-foreground">Welcome back</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                    Sign in to your TaxKosh account
+                    Log in to continue your filing.
                 </p>
             </div>
 
@@ -125,27 +128,31 @@ export function LoginForm() {
                 </Alert>
             )}
 
-            {/* Google */}
-            <Button
-                variant="outline"
-                className="w-full mb-4 gap-2"
-                onClick={handleGoogleLogin}
-                disabled={isGoogleLoading}
-                id="google-signin-btn"
-            >
-                {isGoogleLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                    <Chrome className="h-4 w-4" />
-                )}
-                Continue with Google
-            </Button>
+            {/* Google — hidden entirely when OAuth isn't configured */}
+            {googleEnabled && (
+                <>
+                    <Button
+                        variant="outline"
+                        className="w-full mb-4 gap-2"
+                        onClick={handleGoogleLogin}
+                        disabled={isGoogleLoading}
+                        id="google-signin-btn"
+                    >
+                        {isGoogleLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                            <Chrome className="h-4 w-4" />
+                        )}
+                        Continue with Google
+                    </Button>
 
-            <div className="flex items-center gap-3 mb-4">
-                <Separator className="flex-1" />
-                <span className="text-xs text-muted-foreground">or</span>
-                <Separator className="flex-1" />
-            </div>
+                    <div className="flex items-center gap-3 mb-4">
+                        <Separator className="flex-1" />
+                        <span className="text-xs text-muted-foreground">or</span>
+                        <Separator className="flex-1" />
+                    </div>
+                </>
+            )}
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 <div className="space-y-1.5">
@@ -209,11 +216,11 @@ export function LoginForm() {
                 </Button>
             </form>
 
-            <p className="text-center text-sm text-muted-foreground mt-6">
-                Don&apos;t have an account?{" "}
-                <Link href="/register" className="text-primary hover:underline font-medium">
-                    Create one free
-                </Link>
+            <p className="text-center text-xs text-muted-foreground mt-6">
+                By continuing you agree to TaxKosh&apos;s{" "}
+                <Link href="/terms" className="text-primary hover:underline">Terms</Link>
+                {" "}and{" "}
+                <Link href="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>.
             </p>
         </div>
     );

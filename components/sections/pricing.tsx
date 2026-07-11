@@ -12,6 +12,7 @@ const plans = [
         description: "Perfect for salaried employees & simple ITR filers.",
         badge: null,
         cta: "Get Started",
+        href: "/register",
         features: [
             "ITR-1 & ITR-2 filing",
             "Salary & HRA calculation",
@@ -29,6 +30,7 @@ const plans = [
         description: "For freelancers, small businesses & proprietors.",
         badge: "Most Popular",
         cta: "Start Free Trial",
+        href: "/register",
         features: [
             "Everything in Individual",
             "ITR-3 & ITR-4 filing",
@@ -47,6 +49,7 @@ const plans = [
         description: "For Chartered Accountants managing multiple clients.",
         badge: null,
         cta: "Contact Sales",
+        href: "/contact",
         features: [
             "Everything in Business",
             "Unlimited client filings",
@@ -68,8 +71,8 @@ export function Pricing() {
                     <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3">
                         Transparent Pricing
                     </p>
-                    <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
-                        Plans for Every Taxpayer
+                    <h2 className="font-serif text-4xl sm:text-5xl mb-4">
+                        Plans for every taxpayer
                     </h2>
                     <p className="text-muted-foreground max-w-lg mx-auto">
                         GST inclusive pricing. No hidden fees. Cancel anytime.
@@ -96,7 +99,7 @@ export function Pricing() {
                             <CardHeader className="pb-4 pt-8">
                                 <p className="text-sm font-semibold text-muted-foreground mb-1">{plan.name}</p>
                                 <div className="flex items-end gap-1">
-                                    <span className="text-4xl font-bold tracking-tight">{plan.price}</span>
+                                    <span className="font-serif text-4xl">{plan.price}</span>
                                     <span className="text-muted-foreground text-sm mb-1">{plan.period}</span>
                                 </div>
                                 <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
@@ -108,7 +111,7 @@ export function Pricing() {
                                     className="w-full"
                                     asChild
                                 >
-                                    <Link href="#contact">{plan.cta}</Link>
+                                    <Link href={plan.href}>{plan.cta}</Link>
                                 </Button>
                                 <ul className="space-y-2.5">
                                     {plan.features.map((f) => (

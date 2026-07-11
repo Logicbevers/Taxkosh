@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { LoginForm } from "@/components/auth/login-form";
+import { googleAuthEnabled } from "@/lib/auth";
 
 export const metadata = {
     title: "Sign In — TaxKosh",
@@ -9,7 +10,7 @@ export const metadata = {
 export default function LoginPage() {
     return (
         <Suspense>
-            <LoginForm />
+            <LoginForm googleEnabled={googleAuthEnabled} />
         </Suspense>
     );
 }

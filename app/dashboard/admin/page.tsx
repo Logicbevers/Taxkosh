@@ -80,7 +80,7 @@ export default async function AdminDashboardPage() {
         <div className="p-8 space-y-8 max-w-7xl mx-auto pb-24 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
                 <div>
-                    <h1 className="text-4xl font-black tracking-tighter bg-gradient-to-r from-slate-900 via-slate-700 to-slate-400 bg-clip-text text-transparent dark:from-white dark:to-slate-400 uppercase leading-none">
+                    <h1 className="font-serif text-[32px] text-foreground">
                         Operational Intelligence
                     </h1>
                     <p className="text-muted-foreground mt-2 text-sm font-medium tracking-tight">
@@ -164,17 +164,17 @@ export default async function AdminDashboardPage() {
                 <div className="flex flex-col gap-8">
                     <Card className="border-none shadow-2xl shadow-primary/20 bg-slate-900 text-white overflow-hidden relative group rounded-[2.5rem]">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full -mr-32 -mt-32 blur-[100px] group-hover:scale-125 transition-transform duration-700 opacity-50" />
-                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-indigo-500/10 rounded-full -ml-16 -mb-16 blur-[60px] group-hover:scale-125 transition-transform duration-700 opacity-50" />
+                        <div className="absolute bottom-0 left-0 w-32 h-32 bg-primary/10 rounded-full -ml-16 -mb-16 blur-[60px] group-hover:scale-125 transition-transform duration-700 opacity-50" />
                         
                         <CardHeader className="relative z-10 pt-10 px-10 pb-0">
                             <CardTitle className="text-primary text-[10px] font-black uppercase tracking-[0.4em]">Customer Velocity</CardTitle>
                         </CardHeader>
                         <CardContent className="relative z-10 pb-12 pt-6 flex flex-col items-center">
-                            <div className="text-8xl font-black tracking-tighter mb-4 bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent">+{totalUsers}</div>
+                            <div className="font-serif text-8xl mb-4 text-white">+{totalUsers}</div>
                             <p className="text-[10px] font-black text-white/50 uppercase tracking-[0.3em] mb-10">Net Entity Growth (Tier 1)</p>
                             
                             <div className="w-full bg-white/5 h-2 rounded-full overflow-hidden mb-6 border border-white/10 shadow-inner">
-                                <div className="bg-gradient-to-r from-primary to-indigo-500 w-[78%] h-full rounded-full shadow-[0_0_20px_rgba(var(--primary-rgb),0.6)] animate-pulse" />
+                                <div className="bg-gradient-to-r from-primary to-primary/70 w-[78%] h-full rounded-full shadow-[0_0_20px_rgba(var(--primary-rgb),0.6)] animate-pulse" />
                             </div>
                             
                             <div className="flex items-center gap-3 bg-white/5 px-6 py-3 rounded-2xl border border-white/10 backdrop-blur-md">

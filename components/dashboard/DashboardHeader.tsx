@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
 import { Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/logo";
@@ -39,6 +40,11 @@ function isActive(pathname: string, href: string) {
 
 export function DashboardHeader({ user }: { user: User }) {
     const pathname = usePathname() ?? "/dashboard";
+    // Radix widgets (Sheet, DropdownMenu) generate useId-based ids that differ
+    // between SSR and client (next-themes shifts the fiber counter), so mount
+    // them only after hydration to avoid an id mismatch.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
     const linkClass = (href: string) =>
         cn(
             "transition-colors hover:text-primary",
@@ -48,7 +54,10 @@ export function DashboardHeader({ user }: { user: User }) {
         <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-16 items-center justify-between">
                 <div className="flex items-center gap-4">
-                    {/* Mobile Menu */}
+                    {/* Mobile Menu — Radix, gated behind mount */}
+                    {!mounted ? (
+                        <div className="md:hidden size-9" aria-hidden />
+                    ) : (
                     <Sheet>
                         <SheetTrigger asChild>
                             <Button variant="ghost" size="icon" className="md:hidden">
@@ -88,6 +97,7 @@ export function DashboardHeader({ user }: { user: User }) {
                             </nav>
                         </SheetContent>
                     </Sheet>
+                    )}
 
                     <Link href="/dashboard" className="flex items-center">
                         <Logo size="md" className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline-flex" />
@@ -118,8 +128,15 @@ export function DashboardHeader({ user }: { user: User }) {
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-4">
+                    {!mounted ? (
+                        <>
+                            <div className="size-10" aria-hidden />
+                            <div className="size-10 rounded-full border bg-muted" aria-hidden />
+                        </>
+                    ) : (
+                    <>
                     <NotificationBell />
-                    
+
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-10 w-10 bg-slate-100 dark:bg-slate-900 rounded-full p-0 overflow-hidden border">
@@ -153,6 +170,8 @@ export function DashboardHeader({ user }: { user: User }) {
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>
+                    </>
+                    )}
                 </div>
             </div>
         </header>

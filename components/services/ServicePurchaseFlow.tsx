@@ -114,8 +114,8 @@ export function ServicePurchaseFlow({
             {/* Price header */}
             <div>
                 <p className="text-xs uppercase tracking-widest text-muted-foreground mb-1">Service fee</p>
-                <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold tracking-tight">
+                <div className="flex items-baseline gap-2">
+                    <span className="font-serif text-5xl text-foreground">
                         ₹{price > 0 ? price.toLocaleString("en-IN") : "—"}
                     </span>
                     {price > 0 && <span className="text-sm text-muted-foreground">one-time</span>}

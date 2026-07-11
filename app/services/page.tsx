@@ -14,11 +14,11 @@ export default async function ServicesIndexPage() {
     return (
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
             <header className="text-center mb-12">
-                <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3">
-                    Complete Compliance Catalog
+                <p className="text-xs font-bold text-primary tracking-wider uppercase mb-3">
+                    Complete compliance catalog
                 </p>
-                <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
-                    Every service, one platform
+                <h1 className="font-serif text-4xl sm:text-5xl mb-4">
+                    What do you need filed?
                 </h1>
                 <p className="text-muted-foreground max-w-2xl mx-auto">
                     Browse categories, drill into the exact service you need, and pick a plan.

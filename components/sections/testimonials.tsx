@@ -18,7 +18,7 @@ const testimonials = [
         rating: 5,
         text: "Managing GST for my trading business was a nightmare before TaxKosh. Now GSTR-3B practically files itself. The CA review before submission gives me peace of mind. Worth every rupee.",
         initials: "RM",
-        color: "bg-violet-500/20 text-violet-500",
+        color: "bg-accent-strong/20 text-accent-strong",
     },
     {
         name: "Anita Desai",
@@ -49,7 +49,7 @@ export function Testimonials() {
                     <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3">
                         Testimonials
                     </p>
-                    <h2 className="text-3xl sm:text-4xl font-bold tracking-tight mb-4">
+                    <h2 className="font-serif text-4xl sm:text-5xl mb-4">
                         Trusted Across India
                     </h2>
                     <p className="text-muted-foreground max-w-lg mx-auto">

@@ -185,7 +185,7 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                     </Button>
                     <div>
                         <div className="flex flex-wrap items-center gap-3">
-                            <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-r from-slate-900 to-slate-500 bg-clip-text text-transparent dark:from-white dark:to-slate-400 uppercase">
+                            <h1 className="font-serif text-3xl text-foreground">
                                 {req.service?.name || "Managed Service"}
                             </h1>
                             <Badge variant="outline" className="font-mono text-[10px] py-1 px-3 border-primary/20 bg-primary/5 text-primary tracking-widest uppercase">
@@ -442,7 +442,7 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                 <div className="space-y-8">
                     {/* Section 4: Lifecycle Engine */}
                     <Card className="border-none shadow-xl dark:bg-slate-900 overflow-hidden sticky top-8 group">
-                        <div className="h-1 bg-gradient-to-r from-primary to-indigo-500 w-full" />
+                        <div className="h-1 bg-gradient-to-r from-primary to-primary/70 w-full" />
                         <CardHeader className="bg-muted/30 border-b py-6 px-8 shadow-inner">
                             <CardTitle className="font-black text-[10px] uppercase tracking-[0.4em] text-slate-500 group-hover:text-primary transition-colors">Actions</CardTitle>
                         </CardHeader>
@@ -455,12 +455,12 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                                 <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform text-primary/40" />
                             </Button>
                             
-                            <Button className="w-full justify-between h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest group/btn transition-all hover:ring-2 hover:ring-indigo-500/20 border-slate-100" variant="outline" onClick={() => handleStatusUpdate("UNDER_PROCESS")} disabled={isActionLoading}>
+                            <Button className="w-full justify-between h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest group/btn transition-all hover:ring-2 hover:ring-primary/20 border-slate-100" variant="outline" onClick={() => handleStatusUpdate("UNDER_PROCESS")} disabled={isActionLoading}>
                                 <div className="flex items-center gap-3">
-                                    <div className="h-8 w-8 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center font-mono">02</div>
+                                    <div className="h-8 w-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center font-mono">02</div>
                                     Start Processing
                                 </div>
-                                <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform text-indigo-500/40" />
+                                <ChevronRight className="w-4 h-4 group-hover/btn:translate-x-1 transition-transform text-primary/40" />
                             </Button>
 
                             <Button className="w-full justify-between h-14 rounded-2xl font-black text-[10px] uppercase tracking-widest group/btn transition-all hover:ring-2 hover:ring-amber-500/20 border-slate-100" variant="outline" onClick={handleClarification} disabled={isActionLoading}>

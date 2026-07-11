@@ -13,7 +13,7 @@ const STATUS_COLORS: Record<string, string> = {
     PAID: "bg-green-500/10 text-green-600 border-green-500/20",
     DOCUMENTS_PENDING: "bg-yellow-500/10 text-yellow-600 border-yellow-500/20",
     DOCUMENTS_SUBMITTED: "bg-blue-500/10 text-blue-600 border-blue-500/20",
-    UNDER_PROCESS: "bg-indigo-500/10 text-indigo-600 border-indigo-500/20",
+    UNDER_PROCESS: "bg-status-pending/15 text-status-pending border-transparent",
     CLARIFICATION_REQUIRED: "bg-orange-500/10 text-orange-600 border-orange-500/20",
     READY_FOR_FILING: "bg-teal-500/10 text-teal-600 border-teal-500/20",
     FILED: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
@@ -62,7 +62,7 @@ export default async function ServicesDashboard() {
     return (
         <div className="container p-6 space-y-12 max-w-7xl mx-auto">
             <div>
-                <h1 className="text-4xl font-black tracking-tight bg-gradient-to-br from-slate-900 to-slate-500 dark:from-white dark:to-slate-400 bg-clip-text text-transparent">Compliance Hub</h1>
+                <h1 className="font-serif text-4xl text-foreground">Compliance Hub</h1>
                 <p className="text-muted-foreground mt-2 font-medium">
                     Initiate new workflows or track your ongoing compliance tasks.
                 </p>

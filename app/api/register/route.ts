@@ -78,10 +78,26 @@ export async function POST(req: NextRequest) {
         });
 
         // Send verification email (non-blocking — don't fail if email fails)
+        let emailDelivered = false;
         try {
-            await sendVerificationEmail(email, tokenRecord.token);
+            const res = await sendVerificationEmail(email, tokenRecord.token);
+            emailDelivered = res.sent;
         } catch (emailErr) {
             console.error("Failed to send verification email:", emailErr);
+        }
+
+        // No email provider configured → the verification link can never reach
+        // the user, which would dead-end every signup. Auto-verify instead.
+        // This branch disables itself as soon as RESEND_API_KEY is set.
+        if (!emailDelivered) {
+            await prisma.user.update({
+                where: { id: user.id },
+                data: { emailVerified: new Date() },
+            });
+            return NextResponse.json(
+                { message: "Account created! You can log in now.", autoVerified: true },
+                { status: 201 }
+            );
         }
 
         return NextResponse.json(
