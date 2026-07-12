@@ -27,6 +27,17 @@ export function isRazorpayConfigured(): boolean {
     return true;
 }
 
+/**
+ * Whether the simulated (no-money) checkout may run. Only ever active when
+ * Razorpay is NOT configured, and it can be shut off on a live deployment by
+ * setting ALLOW_DEMO_CHECKOUT=false — do this before real marketing traffic,
+ * otherwise visitors can claim paid services for free.
+ */
+export function isDemoCheckoutAllowed(): boolean {
+    if (isRazorpayConfigured()) return false;
+    return process.env.ALLOW_DEMO_CHECKOUT !== "false";
+}
+
 // Lazily instantiated so missing env vars throw at call time, not module load
 let _razorpay: Razorpay | null = null;
 export function getRazorpay(): Razorpay {

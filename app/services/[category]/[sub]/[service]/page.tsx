@@ -4,6 +4,7 @@ import { ChevronRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { getPublicService } from "@/lib/catalog";
 import { auth } from "@/lib/auth";
+import { isSmsConfigured } from "@/lib/sms";
 import { ServicePurchaseFlow } from "@/components/services/ServicePurchaseFlow";
 
 export async function generateMetadata({
@@ -79,6 +80,7 @@ export default async function ServiceDetailPage({
                     isSignedIn={isSignedIn}
                     returnPath={`/services/${parentCategory.slug}/${p.sub}/${p.service}`}
                     autoCheckout={autoCheckout}
+                    requirePhoneVerification={isSmsConfigured()}
                 />
             </div>
         </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { razorpay, isRazorpayConfigured } from "@/lib/razorpay";
+import { razorpay, isRazorpayConfigured, isDemoCheckoutAllowed } from "@/lib/razorpay";
 
 /**
  * Documents uploaded during the pre-payment purchase flow are created before the
@@ -44,9 +44,16 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: "A plan or service ID is required" }, { status: 400 });
         }
 
-        // Demo mode: no real gateway keys configured. Skip Razorpay entirely and
-        // create a pending request the client can settle via the demo endpoint,
-        // so stakeholders can walk the full checkout without live credentials.
+        // No real gateway keys configured:
+        //  - demo checkout allowed  → simulate the payment (stakeholder demos)
+        //  - demo checkout disabled → refuse cleanly instead of giving services
+        //    away for free on a public deployment (ALLOW_DEMO_CHECKOUT=false)
+        if (!isRazorpayConfigured() && !isDemoCheckoutAllowed()) {
+            return NextResponse.json(
+                { error: "Online payments are launching soon. Please contact support@taxkosh.com to proceed with this service." },
+                { status: 503 }
+            );
+        }
         if (!isRazorpayConfigured()) {
             const serviceReq = await prisma.serviceRequest.create({
                 data: {

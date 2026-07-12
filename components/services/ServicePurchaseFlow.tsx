@@ -27,6 +27,12 @@ interface ServicePurchaseFlowProps {
     isSignedIn: boolean;
     returnPath: string;
     autoCheckout?: boolean;
+    /**
+     * Only gate payment on phone verification when an SMS gateway is
+     * configured — without one, real users can never receive the OTP and the
+     * funnel would dead-end (the server passes isSmsConfigured() here).
+     */
+    requirePhoneVerification?: boolean;
 }
 
 interface DocState {
@@ -44,27 +50,28 @@ export function ServicePurchaseFlow({
     isSignedIn,
     returnPath,
     autoCheckout,
+    requirePhoneVerification = false,
 }: ServicePurchaseFlowProps) {
     const [docs, setDocs] = useState<DocState[]>(
         requiredDocuments.map((label) => ({ label, uploading: false, uploaded: false }))
     );
     const [phoneVerified, setPhoneVerified] = useState(false);
-    const [phoneLoading, setPhoneLoading] = useState(isSignedIn);
+    const [phoneLoading, setPhoneLoading] = useState(isSignedIn && requirePhoneVerification);
     const [otpOpen, setOtpOpen] = useState(false);
     const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-    // Fetch phone verification status on mount
+    // Fetch phone verification status on mount (only when the step is active)
     useEffect(() => {
-        if (!isSignedIn) return;
+        if (!isSignedIn || !requirePhoneVerification) return;
         fetch("/api/auth/phone/status")
             .then((r) => r.json())
             .then((d) => setPhoneVerified(d.phoneVerified ?? false))
             .catch(() => {})
             .finally(() => setPhoneLoading(false));
-    }, [isSignedIn]);
+    }, [isSignedIn, requirePhoneVerification]);
 
     const allDocsUploaded = docs.every((d) => d.uploaded);
-    const canProceed = allDocsUploaded && phoneVerified;
+    const canProceed = allDocsUploaded && (phoneVerified || !requirePhoneVerification);
 
     async function handleFileChange(index: number, file: File | null) {
         if (!file) return;
@@ -211,7 +218,8 @@ export function ServicePurchaseFlow({
                         </Card>
                     )}
 
-                    {/* Step 2 — Phone verification */}
+                    {/* Step 2 — Phone verification (hidden until an SMS gateway exists) */}
+                    {requirePhoneVerification && (
                     <Card className={phoneVerified ? "border-emerald-500/50" : "border-border"}>
                         <CardContent className="p-4 flex items-center gap-4">
                             <div className="shrink-0">
@@ -245,6 +253,7 @@ export function ServicePurchaseFlow({
                             )}
                         </CardContent>
                     </Card>
+                    )}
 
                     {/* Payment CTA */}
                     <div className="space-y-2">

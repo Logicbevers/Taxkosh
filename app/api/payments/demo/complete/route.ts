@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isRazorpayConfigured } from "@/lib/razorpay";
+import { isDemoCheckoutAllowed } from "@/lib/razorpay";
 import { finalizePaidServiceRequest } from "@/lib/payments";
 
 /**
@@ -18,8 +18,9 @@ export async function POST(req: Request) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Hard stop: this simulated settlement must never run against real payments.
-    if (isRazorpayConfigured()) {
+    // Hard stop: refused when real Razorpay keys exist, or when demo checkout
+    // has been explicitly disabled (ALLOW_DEMO_CHECKOUT=false) on a live site.
+    if (!isDemoCheckoutAllowed()) {
         return NextResponse.json({ error: "Demo payment is disabled" }, { status: 403 });
     }
 
