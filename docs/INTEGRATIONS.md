@@ -14,8 +14,8 @@ noted.
 | 5 | Google OAuth | Sign-in button hidden automatically | OAuth client with redirect `https://www.taxkosh.com/api/auth/callback/google`; set `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | Google Cloud | P2 |
 | 6 | WhatsApp notifications | Not built (in-app + email only) | WhatsApp Business API + approved templates; hook into `lib/notifications.ts → triggerStatusNotification()` | Meta Cloud API / Gupshup / Interakt | P1 roadmap |
 | 7 | Error monitoring | Vercel function logs only | `@sentry/nextjs` + DSN | Sentry | P2 |
-| 8 | Analytics | None | Enable Vercel Analytics or add GA4 | Vercel Analytics / GA4 | P2 |
-| 9 | Rate-limit store | In-memory (per-lambda, not global) | Swap limiter in `lib/middleware-utils.ts` to Redis | Upstash Redis | P3 |
+| 8 | Analytics | ✅ **DONE** — `@vercel/analytics` wired in the root layout; data appears in the Vercel dashboard automatically | Nothing | Vercel Analytics | ✅ |
+| 9 | Rate-limit store | ✅ **Code done** — limiter uses Upstash REST when configured, memory otherwise (fails open on Redis errors) | Create free Upstash Redis; set `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` | Upstash Redis | P3 |
 | 10 | Virus scanning | Stub — always passes (`scanFileForViruses`) | Real scan before accepting uploads | Cloudmersive / ClamAV | P3 |
 | 11 | ERI e-filing | CAs file manually on the govt portal | e-Return Intermediary registration with the Income Tax Dept (regulatory process) | IT Dept ERI program | Long-term |
 

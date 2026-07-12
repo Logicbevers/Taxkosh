@@ -1,26 +1,75 @@
 import { NextResponse } from "next/server";
 
-// Simple memory-based rate limiter for demonstration/small scale
-// For production, use Redis (e.g. @upstash/ratelimit)
+/**
+ * Rate limiter with two backends:
+ *  - Upstash Redis (REST, edge-safe) when UPSTASH_REDIS_REST_URL/TOKEN are set —
+ *    limits are then GLOBAL across all serverless instances.
+ *  - In-memory Map otherwise (dev / before Upstash is configured) — limits are
+ *    per-instance only, which is fine at low traffic.
+ *
+ * On Redis errors we FAIL OPEN: a rate-limiter outage must never take auth or
+ * uploads down with it.
+ */
 const cache = new Map<string, { count: number; expires: number }>();
 
-export function rateLimit(ip: string, limit: number = 10, windowMs: number = 60000, scope: string = "global") {
-    const now = Date.now();
-    const key = `rl:${scope}:${ip}`;
+const UPSTASH_URL = process.env.UPSTASH_REDIS_REST_URL;
+const UPSTASH_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
+type RateLimitResult = { success: boolean; remaining: number };
+
+function memoryRateLimit(key: string, limit: number, windowMs: number): RateLimitResult {
+    const now = Date.now();
     const record = cache.get(key);
 
     if (!record || now > record.expires) {
         cache.set(key, { count: 1, expires: now + windowMs });
         return { success: true, remaining: limit - 1 };
     }
-
     if (record.count >= limit) {
         return { success: false, remaining: 0 };
     }
-
     record.count += 1;
     return { success: true, remaining: limit - record.count };
+}
+
+async function upstashRateLimit(key: string, limit: number, windowMs: number): Promise<RateLimitResult> {
+    // Fixed-window counter: INCR the key, set its expiry only on first hit.
+    const res = await fetch(`${UPSTASH_URL}/pipeline`, {
+        method: "POST",
+        headers: {
+            Authorization: `Bearer ${UPSTASH_TOKEN}`,
+            "Content-Type": "application/json",
+        },
+        body: JSON.stringify([
+            ["INCR", key],
+            ["PEXPIRE", key, windowMs, "NX"],
+        ]),
+        // Rate limiting must be fast — don't let a slow Redis stall requests.
+        signal: AbortSignal.timeout(2000),
+    });
+    if (!res.ok) throw new Error(`Upstash ${res.status}`);
+    const data = (await res.json()) as { result: number }[];
+    const count = Number(data[0]?.result ?? 0);
+    return { success: count <= limit, remaining: Math.max(0, limit - count) };
+}
+
+export async function rateLimit(
+    ip: string,
+    limit: number = 10,
+    windowMs: number = 60000,
+    scope: string = "global"
+): Promise<RateLimitResult> {
+    const key = `rl:${scope}:${ip}`;
+
+    if (UPSTASH_URL && UPSTASH_TOKEN) {
+        try {
+            return await upstashRateLimit(key, limit, windowMs);
+        } catch (err) {
+            console.error("Rate limiter (Upstash) failed — failing open:", err);
+            return { success: true, remaining: limit };
+        }
+    }
+    return memoryRateLimit(key, limit, windowMs);
 }
 
 export function injectSecurityHeaders(res: NextResponse) {

@@ -10,7 +10,7 @@ import { getClientIp } from "@/lib/api-auth";
 
 export async function POST(req: NextRequest) {
     const ip = getClientIp(req);
-    const rl = rateLimit(ip, 5, 60 * 60 * 1000, "register"); // 5 registrations per hour per IP
+    const rl = await rateLimit(ip, 5, 60 * 60 * 1000, "register"); // 5 registrations per hour per IP
     if (!rl.success) {
         return NextResponse.json({ error: "Too many requests. Please try again later." }, { status: 429 });
     }
