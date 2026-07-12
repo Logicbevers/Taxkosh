@@ -64,7 +64,7 @@ export default function TermsPage() {
 
             <h2>8. Contact</h2>
             <p>
-                Questions about these Terms? Email <a href="mailto:legal@taxkosh.in">legal@taxkosh.in</a> or visit
+                Questions about these Terms? Email <a href="mailto:legal@taxkosh.com">legal@taxkosh.com</a> or visit
                 our <a href="/contact">Contact page</a>.
             </p>
 

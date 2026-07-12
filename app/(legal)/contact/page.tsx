@@ -17,7 +17,7 @@ export default function ContactPage() {
                 <div className="rounded-xl border p-5">
                     <Mail className="w-5 h-5 text-primary mb-2" />
                     <p className="font-semibold text-foreground">Email</p>
-                    <a href="mailto:support@taxkosh.in" className="text-sm text-primary hover:underline">support@taxkosh.in</a>
+                    <a href="mailto:support@taxkosh.com" className="text-sm text-primary hover:underline">support@taxkosh.com</a>
                 </div>
                 {process.env.NEXT_PUBLIC_SUPPORT_PHONE && (
                     <div className="rounded-xl border p-5">
@@ -51,7 +51,7 @@ export default function ContactPage() {
             <p>
                 <strong>{process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME ?? "Grievance Officer, TaxKosh Technologies Pvt. Ltd."}</strong>
                 <br />
-                Email: <a href="mailto:grievance@taxkosh.in">grievance@taxkosh.in</a>
+                Email: <a href="mailto:grievance@taxkosh.com">grievance@taxkosh.com</a>
             </p>
             <p>
                 We acknowledge grievances within 48 hours and aim to resolve them within 30 days, as required

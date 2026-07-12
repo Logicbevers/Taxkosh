@@ -103,7 +103,7 @@ export default async function ProfilePage() {
 
             <p className="text-xs text-muted-foreground">
                 Something not right? Contact support at{" "}
-                <a href="mailto:support@taxkosh.in" className="text-primary hover:underline">support@taxkosh.in</a>.
+                <a href="mailto:support@taxkosh.com" className="text-primary hover:underline">support@taxkosh.com</a>.
             </p>
         </div>
     );

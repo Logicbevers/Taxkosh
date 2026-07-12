@@ -35,6 +35,9 @@ const hind = Hind({
   display: "swap",
 });
 
+// Canonical site URL — from env in production, falls back to the live domain.
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.taxkosh.com";
+
 export const metadata: Metadata = {
   title: "TaxKosh — Smart Indian Tax Filing Platform",
   description:
@@ -50,11 +53,11 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: "TaxKosh Technologies Pvt. Ltd." }],
   creator: "TaxKosh Technologies Pvt. Ltd.",
-  metadataBase: new URL("https://taxkosh.in"),
+  metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
     locale: "en_IN",
-    url: "https://taxkosh.in",
+    url: SITE_URL,
     title: "TaxKosh — Smart Indian Tax Filing Platform",
     description:
       "File Income Tax, GST, TDS & ROC compliance online with expert CA review.",

@@ -40,7 +40,7 @@ export default function RefundPage() {
 
             <h2>5. How to Request a Refund</h2>
             <p>
-                Email <a href="mailto:support@taxkosh.in">support@taxkosh.in</a> with your invoice number and
+                Email <a href="mailto:support@taxkosh.com">support@taxkosh.com</a> with your invoice number and
                 reason. We aim to respond within 3 business days. Approved refunds are processed to your original
                 payment method within 5–7 business days via Razorpay.
             </p>

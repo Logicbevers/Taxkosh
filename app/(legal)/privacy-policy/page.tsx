@@ -58,7 +58,7 @@ export default function PrivacyPage() {
 
             <h2>7. Contact / Grievance Officer</h2>
             <p>
-                For privacy requests, email <a href="mailto:privacy@taxkosh.in">privacy@taxkosh.in</a>. Our
+                For privacy requests, email <a href="mailto:privacy@taxkosh.com">privacy@taxkosh.com</a>. Our
                 Grievance Officer can be reached via the <a href="/contact">Contact page</a>.
             </p>
 
