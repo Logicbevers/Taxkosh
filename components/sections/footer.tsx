@@ -22,7 +22,7 @@ const footerLinks = {
     Support: [
         { label: "Help & Contact", href: "/contact" },
         { label: "Browse Services", href: "/services" },
-        { label: "WhatsApp Support", href: "https://wa.me/919999999999" },
+        { label: "support@taxkosh.in", href: "mailto:support@taxkosh.in" },
     ],
 };
 

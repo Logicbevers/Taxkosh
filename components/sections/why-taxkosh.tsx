@@ -1,33 +1,35 @@
 import { Card, CardContent } from "@/components/ui/card";
-import { Brain, ShieldCheck, Users } from "lucide-react";
+import { BadgeIndianRupee, ShieldCheck, Users } from "lucide-react";
 
+// Every claim below describes how the platform actually works today —
+// no capability we haven't built, no metric we can't back.
 const pillars = [
     {
-        icon: <Brain className="h-6 w-6 text-primary" />,
-        title: "AI-Assisted Filing",
+        icon: <Users className="h-6 w-6 text-primary" />,
+        title: "Expert CA Review",
         description:
-            "Our smart engine auto-reads your Form 16, 26AS & AIS to pre-fill your returns and find every eligible deduction — maximizing your refund with zero manual effort.",
+            "Every return is prepared and reviewed by an ICAI-registered Chartered Accountant before it is filed. Real people doing accountable work — not an automated guess.",
     },
     {
         icon: <ShieldCheck className="h-6 w-6 text-emerald-500" />,
-        title: "Bank-Grade Security",
+        title: "Secure Document Vault",
         description:
-            "Your data is encrypted with 256-bit AES at rest and in transit, hosted in the AWS Mumbai region with access-controlled document storage. We never sell your data.",
+            "Your documents live in an encrypted, access-controlled vault and are used only for your filing. We never sell or share your data with third parties.",
     },
     {
-        icon: <Users className="h-6 w-6 text-accent-strong" />,
-        title: "CA Expert Review",
+        icon: <BadgeIndianRupee className="h-6 w-6 text-accent-strong" />,
+        title: "Fixed, Upfront Pricing",
         description:
-            "Every return is reviewed by a ICAI-registered Chartered Accountant before submission. Get a 30-minute CA consultation included in every Business & Pro plan.",
+            "Every service shows its full fee before you pay. No sliding scales, no per-document add-ons, no surprises when the work is done.",
     },
 ];
 
 // Honest platform capabilities rather than unverified vanity metrics.
 const stats = [
-    { value: "ITR 1–7", label: "All return types" },
-    { value: "3-in-1", label: "Income Tax · GST · TDS" },
+    { value: "Fixed", label: "Upfront pricing, no surprises" },
     { value: "CA-reviewed", label: "Before every filing" },
-    { value: "AES-256", label: "Encrypted & private" },
+    { value: "ITR · GST · TDS", label: "One platform" },
+    { value: "Encrypted", label: "Access-controlled vault" },
 ];
 
 export function WhyTaxKosh() {

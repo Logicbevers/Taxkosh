@@ -1,69 +1,26 @@
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Check, Zap } from "lucide-react";
+import { ArrowRight, Check, Clock } from "lucide-react";
 import Link from "next/link";
+import { prisma } from "@/lib/prisma";
+import { nameToSlug } from "@/lib/catalog";
 
-const plans = [
-    {
-        name: "Individual",
-        price: "₹999",
-        period: "/year",
-        description: "Perfect for salaried employees & simple ITR filers.",
-        badge: null,
-        cta: "Get Started",
-        href: "/register",
-        features: [
-            "ITR-1 & ITR-2 filing",
-            "Salary & HRA calculation",
-            "80C deduction optimizer",
-            "Form 26AS auto-import",
-            "Email & chat support",
-            "Acknowledgement tracking",
-        ],
-        highlight: false,
-    },
-    {
-        name: "Business",
-        price: "₹2,999",
-        period: "/year",
-        description: "For freelancers, small businesses & proprietors.",
-        badge: "Most Popular",
-        cta: "Start Free Trial",
-        href: "/register",
-        features: [
-            "Everything in Individual",
-            "ITR-3 & ITR-4 filing",
-            "GST filing (GSTR-1 & 3B)",
-            "TDS return filing",
-            "Business expense tracking",
-            "Dedicated CA review",
-            "WhatsApp support",
-        ],
-        highlight: true,
-    },
-    {
-        name: "CA Pro",
-        price: "₹9,999",
-        period: "/year",
-        description: "For Chartered Accountants managing multiple clients.",
-        badge: null,
-        cta: "Contact Sales",
-        href: "/contact",
-        features: [
-            "Everything in Business",
-            "Unlimited client filings",
-            "ROC & MCA compliance",
-            "Bulk GSTR-9 filing",
-            "White-label portal",
-            "Priority phone support",
-            "API access",
-        ],
-        highlight: false,
-    },
-];
+/**
+ * Landing pricing — real, per-service fixed fees pulled from the catalog.
+ * This is the platform's single pricing model: one upfront fee per filing,
+ * charged at checkout (no subscriptions). Prices shown are GST-inclusive,
+ * matching how the invoice engine breaks out CGST/SGST from the total.
+ */
+export async function Pricing() {
+    const services = await prisma.service.findMany({
+        where: { status: "active", price: { gt: 0 } },
+        orderBy: { price: "asc" },
+        take: 4,
+        include: { subCategory: { include: { category: true } } },
+    });
 
-export function Pricing() {
+    if (services.length === 0) return null;
+
     return (
         <section id="pricing" className="py-24 px-4 bg-muted/30">
             <div className="mx-auto max-w-7xl">
@@ -72,63 +29,59 @@ export function Pricing() {
                         Transparent Pricing
                     </p>
                     <h2 className="font-serif text-4xl sm:text-5xl mb-4">
-                        Plans for every taxpayer
+                        One fixed fee per filing
                     </h2>
                     <p className="text-muted-foreground max-w-lg mx-auto">
-                        GST inclusive pricing. No hidden fees. Cancel anytime.
+                        See the full price before you pay — no subscriptions, no hidden
+                        charges, no surprises at the end.
                     </p>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                    {plans.map((plan) => (
-                        <Card
-                            key={plan.name}
-                            className={`relative flex flex-col border transition-all duration-300 ${plan.highlight
-                                    ? "border-primary shadow-xl shadow-primary/15 scale-[1.03] bg-card"
-                                    : "border-border/60 hover:border-primary/30 hover:shadow-md"
-                                }`}
-                        >
-                            {plan.badge && (
-                                <div className="absolute -top-3.5 left-0 right-0 flex justify-center">
-                                    <Badge className="gap-1 px-3 py-1">
-                                        <Zap className="h-3 w-3" />
-                                        {plan.badge}
-                                    </Badge>
-                                </div>
-                            )}
-                            <CardHeader className="pb-4 pt-8">
-                                <p className="text-sm font-semibold text-muted-foreground mb-1">{plan.name}</p>
-                                <div className="flex items-end gap-1">
-                                    <span className="font-serif text-4xl">{plan.price}</span>
-                                    <span className="text-muted-foreground text-sm mb-1">{plan.period}</span>
-                                </div>
-                                <p className="text-sm text-muted-foreground mt-1">{plan.description}</p>
-                            </CardHeader>
-                            <CardContent className="flex flex-col gap-5 flex-1">
-                                <Button
-                                    size="default"
-                                    variant={plan.highlight ? "default" : "outline"}
-                                    className="w-full"
-                                    asChild
-                                >
-                                    <Link href={plan.href}>{plan.cta}</Link>
-                                </Button>
-                                <ul className="space-y-2.5">
-                                    {plan.features.map((f) => (
-                                        <li key={f} className="flex items-start gap-2.5 text-sm">
-                                            <Check className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                                            <span className="text-muted-foreground">{f}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </CardContent>
-                        </Card>
-                    ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
+                    {services.map((s) => {
+                        const href = `/services/${s.subCategory.category.slug}/${nameToSlug(s.subCategory.name)}/${s.slug}`;
+                        return (
+                            <Card
+                                key={s.id}
+                                className="flex flex-col border border-border/60 hover:border-primary/40 hover:shadow-md transition-all"
+                            >
+                                <CardHeader className="pb-3">
+                                    <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                        {s.subCategory.category.name}
+                                    </p>
+                                    <h3 className="font-semibold text-base leading-tight">{s.name}</h3>
+                                </CardHeader>
+                                <CardContent className="flex flex-col gap-4 flex-1">
+                                    <p className="text-sm text-muted-foreground line-clamp-2">
+                                        {s.description || `Handled end-to-end by an ICAI-registered CA.`}
+                                    </p>
+                                    <div className="mt-auto">
+                                        <p className="font-serif text-3xl">₹{s.price.toLocaleString("en-IN")}</p>
+                                        <p className="mt-1 flex items-center gap-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+                                            <Clock className="h-3 w-3" /> {s.slaHours}h turnaround
+                                        </p>
+                                    </div>
+                                    <Button asChild className="w-full">
+                                        <Link href={href}>Select</Link>
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
 
-                <p className="text-center text-xs text-muted-foreground mt-8">
-                    All prices are exclusive of 18% GST. &nbsp;|&nbsp; Payment secured by Razorpay.
-                </p>
+                <div className="mt-10 flex flex-col items-center gap-4">
+                    <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> All prices include 18% GST</span>
+                        <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> GST invoice with every payment</span>
+                        <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Pay only when you're ready to file</span>
+                    </div>
+                    <Button variant="outline" asChild>
+                        <Link href="/services">
+                            Browse the full catalog <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                </div>
             </div>
         </section>
     );

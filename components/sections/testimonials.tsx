@@ -1,89 +1,55 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Star } from "lucide-react";
-
-const testimonials = [
+/**
+ * "How it works" — three steps, start to acknowledgement.
+ * Replaces the earlier testimonial section: we don't publish customer quotes
+ * until we have real, consented ones (Consumer Protection Act / ASCI rules).
+ */
+const steps = [
     {
-        name: "Priya Sharma",
-        role: "Software Engineer",
-        city: "Bengaluru, Karnataka",
-        rating: 5,
-        text: "I used to dread ITR season every year. TaxKosh auto-imported my Form 16 and identified an ₹18,000 refund I didn't know I was owed. Filed in under 12 minutes. Absolute game-changer.",
-        initials: "PS",
-        color: "bg-primary/20 text-primary",
+        n: 1,
+        title: "Choose your service",
+        description:
+            "Pick from ITR, GST, TDS or registration — the full fixed price is shown up front, before you pay.",
     },
     {
-        name: "Rahul Mehta",
-        role: "Small Business Owner",
-        city: "Ahmedabad, Gujarat",
-        rating: 5,
-        text: "Managing GST for my trading business was a nightmare before TaxKosh. Now GSTR-3B practically files itself. The CA review before submission gives me peace of mind. Worth every rupee.",
-        initials: "RM",
-        color: "bg-accent-strong/20 text-accent-strong",
+        n: 2,
+        title: "Upload documents",
+        description:
+            "Drop them into your secure vault on your own time. We tell you exactly what's needed for your service.",
     },
     {
-        name: "Anita Desai",
-        role: "CA — Desai & Associates",
-        city: "Mumbai, Maharashtra",
-        rating: 5,
-        text: "The CA Pro plan transformed my practice. I manage 60+ client filings from a single dashboard. Bulk GSTR-9, director KYC in one click, and the API integration with my existing tools is seamless.",
-        initials: "AD",
-        color: "bg-emerald-500/20 text-emerald-500",
+        n: 3,
+        title: "A CA files it",
+        description:
+            "An ICAI-registered CA reviews and files your return — you get the government acknowledgement in your dashboard.",
     },
 ];
 
-function Stars({ count }: { count: number }) {
-    return (
-        <div className="flex gap-0.5">
-            {Array.from({ length: count }).map((_, i) => (
-                <Star key={i} className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-            ))}
-        </div>
-    );
-}
-
 export function Testimonials() {
     return (
-        <section id="testimonials" className="py-24 px-4 bg-muted/30">
-            <div className="mx-auto max-w-7xl">
-                <div className="text-center mb-14">
-                    <p className="text-sm font-semibold text-primary tracking-widest uppercase mb-3">
-                        Testimonials
-                    </p>
-                    <h2 className="font-serif text-4xl sm:text-5xl mb-4">
-                        Trusted Across India
-                    </h2>
-                    <p className="text-muted-foreground max-w-lg mx-auto">
-                        From salaried employees in Bengaluru to CAs in Mumbai — India's taxpayers
-                        choose TaxKosh.
-                    </p>
-                </div>
+        <section id="how-it-works" className="relative overflow-hidden bg-[oklch(0.94_0.03_165)] dark:bg-[oklch(0.22_0.03_165)]">
+            <div className="pointer-events-none absolute -top-28 right-16 h-72 w-72 rounded-full bg-accent-strong/20 blur-xl" />
+            <div className="relative mx-auto max-w-7xl px-4 py-24">
+                <p className="mb-3 text-sm font-semibold uppercase tracking-widest text-primary">
+                    How it works
+                </p>
+                <h2 className="mb-12 font-serif text-4xl sm:text-5xl text-foreground">
+                    Three steps, start to acknowledgement.
+                </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {testimonials.map((t) => (
-                        <Card
-                            key={t.name}
-                            className="border border-border/60 hover:border-primary/20 hover:shadow-lg hover:shadow-primary/5 transition-all duration-300"
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+                    {steps.map((s) => (
+                        <div
+                            key={s.n}
+                            className="flex flex-col gap-3.5 rounded-2xl bg-card p-7 shadow-[0_12px_28px_oklch(0.21_0.015_90/0.06)]"
                         >
-                            <CardContent className="pt-6 flex flex-col gap-4">
-                                <Stars count={t.rating} />
-                                <p className="text-sm text-muted-foreground leading-relaxed flex-1">
-                                    &ldquo;{t.text}&rdquo;
-                                </p>
-                                <div className="flex items-center gap-3 pt-2 border-t border-border/60">
-                                    <div
-                                        className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${t.color}`}
-                                    >
-                                        {t.initials}
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-semibold leading-tight">{t.name}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            {t.role} · {t.city}
-                                        </p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
+                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-[17px] font-extrabold text-primary-foreground">
+                                {s.n}
+                            </div>
+                            <h3 className="text-[17px] font-extrabold text-foreground">{s.title}</h3>
+                            <p className="text-[13.5px] leading-relaxed text-muted-foreground">
+                                {s.description}
+                            </p>
+                        </div>
                     ))}
                 </div>
             </div>

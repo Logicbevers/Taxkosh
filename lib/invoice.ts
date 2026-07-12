@@ -26,12 +26,21 @@ export function generatePdfInvoice(data: InvoiceData): Promise<Buffer> {
         doc.on('error', reject);
 
         // --- header ---
+        // Company identity comes from env so real registration details are
+        // used in production. The GSTIN line is omitted entirely when not
+        // configured — a fabricated GSTIN on a tax invoice is a compliance
+        // violation, never a placeholder.
+        const companyName = process.env.COMPANY_LEGAL_NAME ?? 'TaxKosh Technologies Pvt. Ltd.';
+        const addressLine1 = process.env.COMPANY_ADDRESS_LINE1 ?? '';
+        const addressLine2 = process.env.COMPANY_ADDRESS_LINE2 ?? 'New Delhi, India';
+        const gstin = process.env.COMPANY_GSTIN ?? process.env.NEXT_PUBLIC_COMPANY_GSTIN;
+
         doc.fontSize(20).text('TaxKosh', 50, 50);
-        doc.fontSize(10).fillColor('#666666')
-            .text('TaxKosh Finance Pvt. Ltd.', 50, 75)
-            .text('123 Fintech Avenue, Tech Park', 50, 90)
-            .text('New Delhi, 110001, India', 50, 105)
-            .text('GSTIN: 07AABCU9603R1ZX', 50, 120);
+        doc.fontSize(10).fillColor('#666666').text(companyName, 50, 75);
+        let headerY = 90;
+        if (addressLine1) { doc.text(addressLine1, 50, headerY); headerY += 15; }
+        doc.text(addressLine2, 50, headerY); headerY += 15;
+        if (gstin) { doc.text(`GSTIN: ${gstin}`, 50, headerY); }
 
         doc.fontSize(16).fillColor('#000000')
             .text('TAX INVOICE', 400, 50, { align: 'right' });

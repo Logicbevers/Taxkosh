@@ -47,9 +47,9 @@ export function Hero() {
 
                     {/* Trust row */}
                     <div className="mt-10 flex flex-wrap gap-x-6 gap-y-3 text-xs font-medium text-[oklch(0.82_0.02_165)]">
-                        <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-accent-strong" /> Bank-grade encryption</span>
+                        <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-accent-strong" /> Encrypted document vault</span>
                         <span className="flex items-center gap-1.5"><BadgeCheck className="h-3.5 w-3.5 text-accent-strong" /> CA-reviewed filings</span>
-                        <span className="flex items-center gap-1.5"><Landmark className="h-3.5 w-3.5 text-accent-strong" /> Direct e-filing</span>
+                        <span className="flex items-center gap-1.5"><Landmark className="h-3.5 w-3.5 text-accent-strong" /> Fixed, upfront pricing</span>
                     </div>
                 </div>
 
@@ -74,10 +74,11 @@ export function Hero() {
                         </div>
                         <p className="mt-1 text-[13px] text-muted-foreground">Acknowledged by CPC · 2 days ago</p>
 
+                        {/* Illustrative product UI — not a real filing */}
                         <div className="mt-5 flex flex-col gap-2.5 border-t border-dashed border-border pt-4 text-[13px]">
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Reviewed by</span>
-                                <span className="font-bold">CA Ramesh Iyer</span>
+                                <span className="font-bold">Your assigned CA</span>
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-muted-foreground">Documents</span>

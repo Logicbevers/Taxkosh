@@ -32,7 +32,7 @@ interface NavUser {
 const secondaryLinks = [
     { label: "Pricing", href: "/#pricing" },
     { label: "Why TaxKosh", href: "/#why" },
-    { label: "Testimonials", href: "/#testimonials" },
+    { label: "How it works", href: "/#how-it-works" },
 ];
 
 export function NavbarClient({ categories, user }: { categories: Cat[]; user: NavUser | null }) {

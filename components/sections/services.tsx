@@ -17,8 +17,8 @@ const iconMap: Record<string, { icon: React.ReactNode; tag?: string }> = {
 };
 
 const genericHighlights: Record<string, string[]> = {
-    "income-tax": ["Form 26AS auto-import", "HRA & LTA claims", "Capital gains reporting"],
-    "gst": ["GSTR reconciliation", "E-invoice compliance", "GST registration"],
+    "income-tax": ["Salaried & freelancer ITR", "HRA & deduction review", "Capital gains reporting"],
+    "gst": ["GSTR-1 & 3B filing", "GST registration", "Reconciliation support"],
     "tds": ["24Q / 26Q returns", "Challan reconciliation", "Correction filing"],
     "tds-compliance": ["24Q / 26Q returns", "Challan reconciliation", "Correction filing"],
 };
