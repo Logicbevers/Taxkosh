@@ -1,7 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { ServiceRequestStatus } from "@prisma/client";
+import { ServiceRequestStatus, UserRole } from "@prisma/client";
 import { sendMail } from "@/lib/mailer";
-import { statusUpdateEmail } from "@/lib/email-templates";
+import { statusUpdateEmail, adminAlertEmail } from "@/lib/email-templates";
+
+const OPS_ROLES: UserRole[] = ["ADMIN", "TAX_EXECUTIVE", "SENIOR_REVIEWER"];
 
 type NotificationTrigger = {
     userId: string;
@@ -53,4 +55,50 @@ export async function triggerStatusNotification({
         serviceRequestId,
     });
     await sendMail({ to: userEmail, subject, html });
+}
+
+/**
+ * Notify the ops/CA team that a request needs their attention (e.g. the
+ * customer just submitted documents). Emails + in-app notifies the assigned
+ * staff member if one is set, otherwise every ops-role user. Best-effort:
+ * a failure here must never break the customer-facing action that triggered it.
+ */
+export async function triggerAdminAlert(opts: {
+    serviceRequestId: string;
+    title: string;
+    message: string;
+}) {
+    const { serviceRequestId, title, message } = opts;
+    try {
+        const req = await prisma.serviceRequest.findUnique({
+            where: { id: serviceRequestId },
+            select: { assignedToId: true },
+        });
+
+        // Prefer the assigned staff member; otherwise every ops-role user.
+        const assignee = req?.assignedToId
+            ? await prisma.user.findUnique({
+                where: { id: req.assignedToId },
+                select: { id: true, email: true },
+            })
+            : null;
+
+        const recipients = assignee
+            ? [assignee]
+            : await prisma.user.findMany({
+                where: { role: { in: OPS_ROLES } },
+                select: { id: true, email: true },
+            });
+
+        if (recipients.length === 0) return;
+
+        await prisma.notification.createMany({
+            data: recipients.map((r) => ({ userId: r.id, title, message, type: "info" as const })),
+        });
+
+        const { subject, html } = adminAlertEmail({ title, message, serviceRequestId });
+        await Promise.all(recipients.map((r) => sendMail({ to: r.email, subject, html })));
+    } catch (err) {
+        console.error("triggerAdminAlert failed (non-fatal):", err);
+    }
 }

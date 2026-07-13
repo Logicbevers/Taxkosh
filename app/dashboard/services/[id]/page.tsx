@@ -204,16 +204,21 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                                     include: { user: true, service: true }
                                 })
                                 
-                                // Trigger Status Notification
-                                const { triggerStatusNotification } = await import("@/lib/notifications");
-                                await triggerStatusNotification({ 
-                                    userId: updated.userId, 
-                                    serviceRequestId: updated.id, 
-                                    serviceName: updated.service?.name || "Service", 
-                                    status: updated.status, 
-                                    userEmail: updated.user.email 
+                                // Notify the customer (confirmation) and the ops/CA team (work to review)
+                                const { triggerStatusNotification, triggerAdminAlert } = await import("@/lib/notifications");
+                                await triggerStatusNotification({
+                                    userId: updated.userId,
+                                    serviceRequestId: updated.id,
+                                    serviceName: updated.service?.name || "Service",
+                                    status: updated.status,
+                                    userEmail: updated.user.email
                                 });
-                                
+                                await triggerAdminAlert({
+                                    serviceRequestId: updated.id,
+                                    title: "Documents submitted",
+                                    message: `${updated.user.name || "A customer"} submitted documents for ${updated.service?.name || "a service"}. Ready for review.`,
+                                });
+
                                 const { redirect } = await import("next/navigation");
                                 redirect(`/dashboard/services/${req.id}`)
                             }}>

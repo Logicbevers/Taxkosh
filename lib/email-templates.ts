@@ -8,14 +8,16 @@
 
 const BRAND = {
     name: "TaxKosh",
-    primary: "#4f46e5",
-    dark: "#111827",
+    primary: "#1a6b52",   // deep emerald (matches --primary)
+    accent: "#c98a2b",    // amber (matches --accent-strong, used for कोष)
+    dark: "#2a2822",      // warm near-black (matches --foreground)
     muted: "#6b7280",
     border: "#e5e7eb",
-    bg: "#f9fafb",
+    bg: "#f7f6f2",        // warm off-white (matches --background)
 };
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.taxkosh.com";
+const SITE_HOST = APP_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 interface ShellOptions {
     heading: string;
@@ -37,7 +39,7 @@ export function emailShell({ heading, body, cta, footerNote }: ShellOptions): st
     <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Inter,sans-serif;background:${BRAND.bg};padding:32px 16px;">
       <div style="max-width:560px;margin:0 auto;background:#ffffff;border:1px solid ${BRAND.border};border-radius:14px;overflow:hidden;">
         <div style="padding:24px 32px;border-bottom:1px solid ${BRAND.border};">
-          <span style="font-size:20px;font-weight:800;color:${BRAND.dark};">Tax<span style="color:${BRAND.primary};">Kosh</span></span>
+          <span style="font-size:20px;font-weight:800;color:${BRAND.dark};">Tax<span style="color:${BRAND.accent};">कोष</span></span>
         </div>
         <div style="padding:32px;">
           <h1 style="font-size:22px;font-weight:700;color:${BRAND.dark};margin:0 0 12px;">${heading}</h1>
@@ -48,7 +50,7 @@ export function emailShell({ heading, body, cta, footerNote }: ShellOptions): st
           <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.5;">
             ${footerNote ?? `This is an automated message from ${BRAND.name}. If you didn't expect it, you can safely ignore this email.`}
           </p>
-          <p style="color:#9ca3af;font-size:12px;margin:8px 0 0;">© ${new Date().getFullYear()} ${BRAND.name} · <a href="${APP_URL}" style="color:${BRAND.muted};">taxkosh.in</a></p>
+          <p style="color:#9ca3af;font-size:12px;margin:8px 0 0;">© ${new Date().getFullYear()} ${BRAND.name} · <a href="${APP_URL}" style="color:${BRAND.muted};">${SITE_HOST}</a></p>
         </div>
       </div>
     </div>`;
@@ -119,6 +121,23 @@ export function statusUpdateEmail(opts: {
             heading: opts.title,
             body: opts.message,
             cta: { label: "View request", href: `${APP_URL}/dashboard/services/${opts.serviceRequestId}` },
+        }),
+    };
+}
+
+/** Internal alert to the ops/CA team — CTA points at the ADMIN request page. */
+export function adminAlertEmail(opts: {
+    title: string;
+    message: string;
+    serviceRequestId: string;
+}) {
+    return {
+        subject: `[Ops] ${opts.title} · TaxKosh`,
+        html: emailShell({
+            heading: opts.title,
+            body: opts.message,
+            cta: { label: "Open in admin", href: `${APP_URL}/dashboard/admin/service-requests/${opts.serviceRequestId}` },
+            footerNote: "Internal notification for the TaxKosh operations team.",
         }),
     };
 }

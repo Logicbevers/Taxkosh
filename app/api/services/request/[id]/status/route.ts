@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { triggerStatusNotification, triggerAdminAlert } from "@/lib/notifications";
 import z from "zod";
 
 // Statuses a regular (non-admin) user is allowed to self-set.
@@ -62,7 +63,27 @@ export async function POST(
             data: {
                 status: body.status,
             },
+            // select (not full include) so the user's password hash never leaks.
+            include: { user: { select: { id: true, name: true, email: true } }, service: true },
         });
+
+        // When the customer submits their documents, confirm to them and alert
+        // the ops/CA team that there's work to review. Best-effort (never blocks).
+        if (body.status === "DOCUMENTS_SUBMITTED") {
+            const serviceName = updatedRequest.service?.name ?? "your service";
+            await triggerStatusNotification({
+                userId: updatedRequest.userId,
+                serviceRequestId: updatedRequest.id,
+                serviceName,
+                status: "DOCUMENTS_SUBMITTED",
+                userEmail: updatedRequest.user.email,
+            });
+            await triggerAdminAlert({
+                serviceRequestId: updatedRequest.id,
+                title: "Documents submitted",
+                message: `${updatedRequest.user.name || "A customer"} submitted documents for ${serviceName}. Ready for review.`,
+            });
+        }
 
         return NextResponse.json(updatedRequest);
     } catch (error: unknown) {
