@@ -1,7 +1,7 @@
 import { sendMail } from "@/lib/mailer";
-import { verificationEmail, passwordResetEmail } from "@/lib/email-templates";
+import { verificationEmail, passwordResetEmail, emailBaseUrl } from "@/lib/email-templates";
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+const APP_URL = emailBaseUrl();
 
 // ─── Email Verification ─────────────────────────────────────
 export async function sendVerificationEmail(email: string, token: string) {

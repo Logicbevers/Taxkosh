@@ -16,7 +16,21 @@ const BRAND = {
     bg: "#f7f6f2",        // warm off-white (matches --background)
 };
 
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://www.taxkosh.com";
+/**
+ * Base URL for links inside emails. Emails are opened away from the dev machine,
+ * so a localhost link is always useless — fall back to the canonical live site
+ * whenever the configured app URL is localhost or unset. Set EMAIL_LINK_URL to
+ * override (e.g. to test local verify links).
+ */
+export function emailBaseUrl(): string {
+    const override = process.env.EMAIL_LINK_URL?.trim();
+    if (override) return override.replace(/\/$/, "");
+    const url = process.env.NEXT_PUBLIC_APP_URL?.trim();
+    if (!url || /localhost|127\.0\.0\.1/.test(url)) return "https://www.taxkosh.com";
+    return url.replace(/\/$/, "");
+}
+
+const APP_URL = emailBaseUrl();
 const SITE_HOST = APP_URL.replace(/^https?:\/\//, "").replace(/\/$/, "");
 
 interface ShellOptions {
