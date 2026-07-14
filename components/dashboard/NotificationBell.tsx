@@ -68,7 +68,7 @@ export function NotificationBell() {
             if (val) fetchNotifications();
         }}>
             <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="relative h-10 w-10 bg-slate-100 dark:bg-slate-900 rounded-full">
+                <Button variant="ghost" size="icon" className="relative h-10 w-10 bg-muted rounded-full">
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
                         <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground border-2 border-background animate-in zoom-in">

@@ -51,7 +51,7 @@ export function DashboardHeader({ user }: { user: User }) {
             isActive(pathname, href) && "text-primary font-bold underline underline-offset-4"
         );
     return (
-        <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
             <div className="container flex h-16 items-center justify-between">
                 <div className="flex items-center gap-4">
                     {/* Mobile Menu — Radix, gated behind mount */}
@@ -139,7 +139,7 @@ export function DashboardHeader({ user }: { user: User }) {
 
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" className="relative h-10 w-10 bg-slate-100 dark:bg-slate-900 rounded-full p-0 overflow-hidden border">
+                            <Button variant="ghost" className="relative h-10 w-10 bg-muted rounded-full p-0 overflow-hidden border">
                                 <Avatar className="h-10 w-10">
                                     <AvatarFallback className="bg-primary/10 text-primary font-bold">
                                         {user?.name?.[0] || user?.email?.[0] || "U"}

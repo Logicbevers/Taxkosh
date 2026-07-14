@@ -40,9 +40,9 @@ export function Footer() {
                         <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                             India&apos;s tax &amp; compliance platform — file Income Tax, GST &amp; TDS with expert review.
                         </p>
-                        {process.env.NEXT_PUBLIC_COMPANY_CIN && (
+                        {process.env.NEXT_PUBLIC_COMPANY_LLPIN && (
                             <p className="text-xs text-muted-foreground">
-                                CIN: {process.env.NEXT_PUBLIC_COMPANY_CIN}
+                                LLPIN: {process.env.NEXT_PUBLIC_COMPANY_LLPIN}
                             </p>
                         )}
                         {process.env.NEXT_PUBLIC_COMPANY_GSTIN && (
