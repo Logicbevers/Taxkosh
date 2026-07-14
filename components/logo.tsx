@@ -36,7 +36,13 @@ export function Logo({ size = "md", inverted = false, showMark = true, className
                 </span>
             )}
             <span className={cn("font-sans font-bold leading-none", s.word, inverted ? "text-white" : "text-foreground")}>
-                Tax<span className="font-hind text-accent-strong font-bold">कोष</span>
+                Tax<span className={cn(
+                    "font-hind font-bold",
+                    // Bright amber reads well on dark surfaces; on a light header the
+                    // same amber washes out, so use a deeper gold there. The dark:
+                    // variant restores the bright amber for dark theme.
+                    inverted ? "text-accent-strong" : "text-[oklch(0.54_0.15_67)] dark:text-accent-strong",
+                )}>कोष</span>
             </span>
         </span>
     );

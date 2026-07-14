@@ -52,7 +52,7 @@ export function NavbarClient({ categories, user }: { categories: Cat[]; user: Na
 
     if (!mounted) {
         return (
-            <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+            <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/75 shadow-[0_1px_3px_rgb(0_0_0/0.04)]">
                 <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                     {/* Real link even before hydration so the logo is always clickable. */}
                     <Link href="/" className="flex items-center">
@@ -64,7 +64,7 @@ export function NavbarClient({ categories, user }: { categories: Cat[]; user: Na
     }
 
     return (
-        <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur-md supports-[backdrop-filter]:bg-background/60">
+        <header className="fixed top-0 left-0 right-0 z-50 border-b border-border/60 bg-background/90 backdrop-blur-md supports-[backdrop-filter]:bg-background/75 shadow-[0_1px_3px_rgb(0_0_0/0.04)]">
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
                 {/* Logo */}
                 <Link href="/" className="flex items-center">
@@ -72,7 +72,7 @@ export function NavbarClient({ categories, user }: { categories: Cat[]; user: Na
                 </Link>
 
                 {/* Desktop nav */}
-                <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+                <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-foreground/70">
                     {/* Services dropdown */}
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>

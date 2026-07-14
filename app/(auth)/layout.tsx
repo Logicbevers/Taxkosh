@@ -27,7 +27,7 @@ export default function AuthLayout({
                 </div>
 
                 <div className="relative text-xs text-[oklch(0.65_0.02_165)]">
-                    © {new Date().getFullYear()} TaxKosh Technologies Pvt. Ltd.
+                    © {new Date().getFullYear()} TaxKosh LLP.
                 </div>
             </div>
 

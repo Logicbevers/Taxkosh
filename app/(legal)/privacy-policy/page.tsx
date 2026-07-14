@@ -8,7 +8,7 @@ export default function PrivacyPage() {
             <LegalHeader title="Privacy Policy" updated="1 July 2026" />
 
             <p>
-                TaxKosh Technologies Pvt. Ltd. (&quot;TaxKosh&quot;) is committed to protecting your privacy. This policy
+                TaxKosh LLP (&quot;TaxKosh&quot;) is committed to protecting your privacy. This policy
                 explains what personal and financial data we collect, how we use it, and your rights, in line with
                 India&apos;s Digital Personal Data Protection Act, 2023.
             </p>

@@ -34,7 +34,7 @@ export default function ContactPage() {
                 <div className="rounded-xl border p-5">
                     <MapPin className="w-5 h-5 text-primary mb-2" />
                     <p className="font-semibold text-foreground">Registered Office</p>
-                    <p className="text-sm text-muted-foreground">TaxKosh Technologies Pvt. Ltd.<br />New Delhi, India</p>
+                    <p className="text-sm text-muted-foreground">TaxKosh LLP<br />New Delhi, India</p>
                 </div>
                 <div className="rounded-xl border p-5">
                     <Clock className="w-5 h-5 text-primary mb-2" />
@@ -49,7 +49,7 @@ export default function ContactPage() {
                 Digital Personal Data Protection Act, 2023, the contact details of our Grievance Officer are:
             </p>
             <p>
-                <strong>{process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME ?? "Grievance Officer, TaxKosh Technologies Pvt. Ltd."}</strong>
+                <strong>{process.env.NEXT_PUBLIC_GRIEVANCE_OFFICER_NAME ?? "Grievance Officer, TaxKosh LLP"}</strong>
                 <br />
                 Email: <a href="mailto:grievance@taxkosh.com">grievance@taxkosh.com</a>
             </p>

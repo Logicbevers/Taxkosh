@@ -77,7 +77,7 @@ export function Footer() {
                 {/* Bottom bar */}
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 py-6 border-t border-border/60 text-xs text-muted-foreground">
                     <p>
-                        © {new Date().getFullYear()} TaxKosh Technologies Pvt. Ltd. All rights reserved.
+                        © {new Date().getFullYear()} TaxKosh LLP. All rights reserved.
                     </p>
                     <div className="flex items-center gap-4">
                         <span className="flex items-center gap-1">

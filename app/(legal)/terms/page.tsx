@@ -9,7 +9,7 @@ export default function TermsPage() {
 
             <p>
                 These Terms of Service (&quot;Terms&quot;) govern your access to and use of the TaxKosh platform,
-                operated by TaxKosh Technologies Pvt. Ltd. (&quot;TaxKosh&quot;, &quot;we&quot;, &quot;us&quot;). By creating an
+                operated by TaxKosh LLP (&quot;TaxKosh&quot;, &quot;we&quot;, &quot;us&quot;). By creating an
                 account or using our services, you agree to be bound by these Terms.
             </p>
 

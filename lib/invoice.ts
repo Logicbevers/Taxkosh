@@ -30,7 +30,7 @@ export function generatePdfInvoice(data: InvoiceData): Promise<Buffer> {
         // used in production. The GSTIN line is omitted entirely when not
         // configured — a fabricated GSTIN on a tax invoice is a compliance
         // violation, never a placeholder.
-        const companyName = process.env.COMPANY_LEGAL_NAME ?? 'TaxKosh Technologies Pvt. Ltd.';
+        const companyName = process.env.COMPANY_LEGAL_NAME ?? 'TaxKosh LLP';
         const addressLine1 = process.env.COMPANY_ADDRESS_LINE1 ?? '';
         const addressLine2 = process.env.COMPANY_ADDRESS_LINE2 ?? 'New Delhi, India';
         const gstin = process.env.COMPANY_GSTIN ?? process.env.NEXT_PUBLIC_COMPANY_GSTIN;

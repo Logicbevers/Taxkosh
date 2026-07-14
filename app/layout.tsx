@@ -52,8 +52,8 @@ export const metadata: Metadata = {
     "ITR filing",
     "TaxKosh",
   ],
-  authors: [{ name: "TaxKosh Technologies Pvt. Ltd." }],
-  creator: "TaxKosh Technologies Pvt. Ltd.",
+  authors: [{ name: "TaxKosh LLP" }],
+  creator: "TaxKosh LLP",
   metadataBase: new URL(SITE_URL),
   openGraph: {
     type: "website",
