@@ -1,5 +1,6 @@
 "use client";
 
+import * as Sentry from "@sentry/nextjs";
 import { useEffect } from "react";
 
 export default function GlobalError({
@@ -10,7 +11,8 @@ export default function GlobalError({
     reset: () => void;
 }) {
     useEffect(() => {
-        // Log to monitoring service when integrated
+        // Report to Sentry (no-op when not configured); keep a console trace too.
+        Sentry.captureException(error);
         console.error("Unhandled application error:", error);
     }, [error]);
 

@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { DocumentType } from "@prisma/client";
 import { uploadToS3 } from "@/lib/s3";
+import { scanBuffer, verifyMagicBytes } from "@/lib/virus-scan";
 
 const ALLOWED_TYPES = [
     "application/pdf",
@@ -12,13 +13,6 @@ const ALLOWED_TYPES = [
 ];
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
-
-// Simulated Virus Scan
-async function scanFileForViruses(buffer: Buffer): Promise<boolean> {
-    // In a real app, integrate via API with ClamAV or AWS Macie.
-    // For now, always pass.
-    return true;
-}
 
 export async function POST(req: NextRequest) {
     const session = await auth();
@@ -70,10 +64,22 @@ export async function POST(req: NextRequest) {
 
         const buffer = Buffer.from(await file.arrayBuffer());
 
-        // Virus Scan
-        const isSafe = await scanFileForViruses(buffer);
-        if (!isSafe) {
-            return NextResponse.json({ error: "Malware detected in file" }, { status: 400 });
+        // Defense in depth: the bytes must actually match the declared type — a
+        // renamed executable claiming to be a PDF is rejected here.
+        if (!verifyMagicBytes(buffer, file.type)) {
+            return NextResponse.json(
+                { error: "File contents don't match its type. Please upload a genuine PDF or image." },
+                { status: 400 }
+            );
+        }
+
+        // Malware scan (Cloudmersive when configured, heuristic otherwise).
+        const scan = await scanBuffer(buffer, file.name);
+        if (!scan.clean) {
+            return NextResponse.json(
+                { error: scan.reason ?? "File failed the malware scan" },
+                { status: 400 }
+            );
         }
 
         const s3Key = await uploadToS3(buffer, file.name, file.type);

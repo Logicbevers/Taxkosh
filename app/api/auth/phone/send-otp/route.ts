@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { randomInt } from "crypto";
+import { sendOtpSms } from "@/lib/sms";
 
 const schema = z.object({
     phone: z.string().regex(/^[6-9]\d{9}$/, "Enter a valid 10-digit Indian mobile number"),
@@ -56,12 +57,26 @@ export async function POST(req: Request) {
         data: { userId, phone, code, expiresAt },
     });
 
-    // Production: send SMS via Twilio / MSG91 / Fast2SMS
+    // Deliver the code via MSG91 (simulated when no provider is configured).
+    const sendResult = await sendOtpSms(phone, code);
+
+    // A configured provider that fails to deliver should surface an error so the
+    // user can retry — the stored OTP simply goes unused and expires.
+    if (!sendResult.simulated && sendResult.error) {
+        return NextResponse.json(
+            { error: sendResult.error + ". Please try again." },
+            { status: 502 }
+        );
+    }
+
+    // Only expose the code client-side when it was NOT actually texted (i.e. no
+    // provider) and we're not in production — never leak a real OTP.
     const isDev = process.env.NODE_ENV !== "production";
+    const exposeCode = sendResult.simulated && isDev;
 
     return NextResponse.json({
         success: true,
         message: `OTP sent to +91 ${phone.slice(0, 2)}XXXXXX${phone.slice(-2)}`,
-        ...(isDev ? { devOtp: code } : {}),
+        ...(exposeCode ? { devOtp: code } : {}),
     });
 }

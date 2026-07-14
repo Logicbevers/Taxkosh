@@ -1,12 +1,13 @@
 /**
  * TaxKosh Monitoring Wrapper
  *
- * To activate real Sentry error tracking:
- *   1. npm install @sentry/nextjs
- *   2. Run: npx @sentry/wizard@latest -i nextjs
- *   3. Set SENTRY_DSN env var
- *   4. Uncomment the Sentry calls below and remove console fallbacks
+ * Sentry is wired via instrumentation.ts (server/edge) and
+ * instrumentation-client.ts (browser). It auto-enables when SENTRY_DSN /
+ * NEXT_PUBLIC_SENTRY_DSN are set; otherwise Sentry.* calls are safe no-ops and
+ * we keep the structured console fallback below.
  */
+
+import * as Sentry from "@sentry/nextjs";
 
 type LogLevel = "info" | "warn" | "error";
 
@@ -38,12 +39,15 @@ class Monitoring {
     }
 
     public captureException(error: Error, context?: Record<string, unknown>) {
+        // Report to Sentry (no-op when DSN is unset).
+        Sentry.captureException(error, context ? { extra: context } : undefined);
+
         if (!this.isProd) {
             console.error("[Dev-Error]", error, context);
             return;
         }
-        // TODO: Sentry.captureException(error, { extra: context });
-        // Fallback: write to stderr so log aggregation picks it up
+        // Fallback: write to stderr so log aggregation picks it up even if
+        // Sentry is off.
         console.error(
             JSON.stringify({
                 level: "error",
