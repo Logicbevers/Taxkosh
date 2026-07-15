@@ -265,12 +265,6 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                         </CardContent>
                     </Card>
 
-                    {req.status === ServiceRequestStatus.CLARIFICATION_REQUIRED && (
-                        <ResolutionCenter
-                            serviceRequestId={req.id}
-                            expertMessage={req.notes ? { content: req.notes, createdAt: req.updatedAt } : undefined}
-                        />
-                    )}
                 </div>
             </div>
         </div>
