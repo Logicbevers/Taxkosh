@@ -9,13 +9,14 @@ import { toast } from "sonner";
 
 interface ResolutionCenterProps {
     serviceRequestId: string;
-    lastInternalNote?: {
+    /** The clarification the ops/CA team asked for (serviceRequest.notes). */
+    expertMessage?: {
         content: string;
         createdAt: Date;
     };
 }
 
-export function ResolutionCenter({ serviceRequestId, lastInternalNote }: ResolutionCenterProps) {
+export function ResolutionCenter({ serviceRequestId, expertMessage }: ResolutionCenterProps) {
     const [message, setMessage] = useState("");
     const [sending, setSending] = useState(false);
     const [uploading, setUploading] = useState(false);
@@ -84,14 +85,14 @@ export function ResolutionCenter({ serviceRequestId, lastInternalNote }: Resolut
                 </CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6 space-y-4">
-                {lastInternalNote && (
+                {expertMessage && (
                     <div className="bg-background rounded-lg p-4 border border-amber-100 dark:border-amber-900/50 shadow-sm">
                         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Message from Tax Expert:</p>
                         <p className="text-sm text-foreground leading-relaxed italic">
-                            &quot;{lastInternalNote.content}&quot;
+                            &quot;{expertMessage.content}&quot;
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-2">
-                            Received on {new Date(lastInternalNote.createdAt).toLocaleDateString()}
+                            Received on {new Date(expertMessage.createdAt).toLocaleDateString()}
                         </p>
                     </div>
                 )}

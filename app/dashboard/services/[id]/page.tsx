@@ -29,10 +29,6 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             plan: true,
             documents: true,
             platformInvoice: true,
-            internalNotes: {
-                orderBy: { createdAt: 'desc' },
-                take: 1
-            }
         }
     })
 
@@ -98,7 +94,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             {req.status === ServiceRequestStatus.CLARIFICATION_REQUIRED && (
                 <ResolutionCenter
                     serviceRequestId={req.id}
-                    lastInternalNote={req.internalNotes[0]}
+                    expertMessage={req.notes ? { content: req.notes, createdAt: req.updatedAt } : undefined}
                 />
             )}
             <div className="grid lg:grid-cols-3 gap-8">
@@ -272,7 +268,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                     {req.status === ServiceRequestStatus.CLARIFICATION_REQUIRED && (
                         <ResolutionCenter
                             serviceRequestId={req.id}
-                            lastInternalNote={req.internalNotes[0]}
+                            expertMessage={req.notes ? { content: req.notes, createdAt: req.updatedAt } : undefined}
                         />
                     )}
                 </div>
