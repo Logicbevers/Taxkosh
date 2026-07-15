@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { ServiceRequestStatus } from "@prisma/client";
 import { triggerStatusNotification } from "@/lib/notifications";
-import { maskPAN } from "@/lib/security";
+import { maskPAN, decrypt } from "@/lib/security";
 import { computeSla } from "@/lib/sla";
 
 /**
@@ -105,7 +105,9 @@ export async function GET(
         }
 
         if (request.user?.pan) {
-            (request.user as typeof request.user & { pan: string }).pan = maskPAN(request.user.pan);
+            // PAN is stored encrypted — decrypt before masking so the admin sees
+            // ABCDE****F, not the raw ciphertext.
+            (request.user as typeof request.user & { pan: string }).pan = maskPAN(decrypt(request.user.pan));
         }
 
         const { hoursElapsed, slaStatus, slaLimitHours } = computeSla(request);

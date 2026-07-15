@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { User as UserIcon, Mail, Phone, Shield, Calendar, CreditCard } from "lucide-react";
-import { maskPAN } from "@/lib/security";
+import { maskPAN, decrypt } from "@/lib/security";
 import { KycForm } from "./kyc-form";
 
 export const metadata = { title: "Profile Settings — TaxKosh" };
@@ -23,11 +23,15 @@ export default async function ProfilePage() {
     });
     if (!user) redirect("/login");
 
+    // PAN is stored encrypted (iv:tag:ciphertext) — decrypt before masking,
+    // otherwise the raw ciphertext is shown.
+    const panPlain = user.pan ? decrypt(user.pan) : null;
+
     const rows = [
         { icon: UserIcon, label: "Full Name", value: user.name ?? "—" },
         { icon: Mail, label: "Email", value: user.email },
         { icon: Phone, label: "Phone", value: user.phone ?? "Not provided" },
-        { icon: CreditCard, label: "PAN", value: maskPAN(user.pan) },
+        { icon: CreditCard, label: "PAN", value: maskPAN(panPlain) },
         { icon: Shield, label: "GSTIN", value: user.gstin ?? "Not provided" },
         { icon: Calendar, label: "Member since", value: new Date(user.createdAt).toLocaleDateString("en-IN", { day: "numeric", month: "long", year: "numeric" }) },
     ];
@@ -93,7 +97,7 @@ export default async function ProfilePage() {
             <KycForm
                 initial={{
                     phone: user.phone,
-                    panMasked: maskPAN(user.pan),
+                    panMasked: maskPAN(panPlain),
                     hasPan: !!user.pan,
                     aadhaarLast4: null,
                     gstin: user.gstin,

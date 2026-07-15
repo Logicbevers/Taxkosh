@@ -355,7 +355,7 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                                                             </div>
                                                             {doc && (
                                                                 <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-white shadow-sm transition-all" onClick={() => window.open(`/api/documents/view?key=${doc.s3Key}`, '_blank')}>
+                                                                    <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-white shadow-sm transition-all" onClick={() => window.open(`/api/documents/view?key=${encodeURIComponent(doc.s3Key)}`, '_blank')}>
                                                                         <Eye className="w-4 h-4" />
                                                                     </Button>
                                                                     <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-white shadow-sm transition-all text-primary">
@@ -385,7 +385,7 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                                                             </div>
                                                         </div>
                                                         <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-white shadow-sm transition-all" onClick={() => window.open(`/api/documents/view?key=${doc.s3Key}`, '_blank')}>
+                                                            <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-white shadow-sm transition-all" onClick={() => window.open(`/api/documents/view?key=${encodeURIComponent(doc.s3Key)}`, '_blank')}>
                                                                 <Eye className="w-4 h-4" />
                                                             </Button>
                                                             <Button size="icon" variant="ghost" className="h-9 w-9 rounded-xl hover:bg-white shadow-sm transition-all text-primary">
@@ -429,7 +429,7 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                                     <p className="text-sm font-semibold text-emerald-50 leading-relaxed max-w-md">
                                         The filing acknowledgement has been uploaded and is available to the customer.
                                     </p>
-                                    <Button variant="outline" className="h-12 rounded-2xl border-none bg-white text-emerald-700 hover:bg-emerald-50 font-black text-xs uppercase tracking-widest shadow-xl px-8" onClick={() => window.open(`/api/documents/view?key=${req.filedAcknowledgementS3Key}`, '_blank')}>
+                                    <Button variant="outline" className="h-12 rounded-2xl border-none bg-white text-emerald-700 hover:bg-emerald-50 font-black text-xs uppercase tracking-widest shadow-xl px-8" onClick={() => window.open(`/api/documents/view?key=${encodeURIComponent(req.filedAcknowledgementS3Key)}`, '_blank')}>
                                         <Download className="w-4 h-4 mr-2" /> Download Acknowledgement
                                     </Button>
                                 </div>

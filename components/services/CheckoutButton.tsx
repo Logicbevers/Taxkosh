@@ -116,9 +116,23 @@ export function CheckoutButton({ serviceId, planId, title, amount, autoCheckout 
                 name: "TaxKosh",
                 description: `Payment for ${title}`,
                 order_id: orderData.razorpayOrderId,
-                handler: function () {
-                    // Payment confirmed client-side. Authoritative state sync
-                    // happens via Razorpay webhook → /api/payments/razorpay/webhook.
+                handler: async function (response) {
+                    // Finalize immediately via signature verification so the
+                    // request is marked PAID without waiting on the webhook. The
+                    // webhook remains an idempotent backup.
+                    try {
+                        await fetch("/api/payments/razorpay/verify", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                            }),
+                        })
+                    } catch {
+                        // Non-fatal: the webhook will still finalize it shortly.
+                    }
                     setIsLoading(false)
                     toast.success("Payment received! Setting up your service request...")
                     router.push(`/dashboard/services/${orderData.serviceRequestId}?status=awaiting_verification`)
