@@ -20,10 +20,11 @@ import {
 import { AuthTabs } from "@/components/auth/auth-tabs";
 import { registerSchema, type RegisterInput } from "@/lib/validations";
 
+// CA is not offered here — it's an admin-granted professional role, not a public
+// signup choice (a CA can see other clients' filings). See registerSchema.
 const ROLES = [
     { value: "INDIVIDUAL", label: "Individual Taxpayer" },
     { value: "BUSINESS", label: "Business Owner" },
-    { value: "CA", label: "Chartered Accountant" },
 ];
 
 export function RegisterForm() {

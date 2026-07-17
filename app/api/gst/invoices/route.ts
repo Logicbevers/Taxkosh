@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { Prisma } from "@prisma/client";
@@ -28,8 +28,8 @@ const invoiceSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     const body = await req.json();
     const parsed = invoiceSchema.safeParse(body);
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     try {
         const invoice = await prisma.invoice.create({
             data: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 type: data.type,
                 invoiceNumber: data.invoiceNumber,
                 date: new Date(data.date),
@@ -77,8 +77,8 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
-    const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const type = searchParams.get("type");
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
     const validTypes = new Set(["SALES", "PURCHASE"]);
     const invoices = await prisma.invoice.findMany({
         where: {
-            userId: session.user.id,
+            userId: guard.session.user.id,
             ...(type && validTypes.has(type) ? { type: type as "SALES" | "PURCHASE" } : {}),
             ...(month ? { date: dateFilter } : {})
         },

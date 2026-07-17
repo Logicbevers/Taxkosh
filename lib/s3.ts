@@ -21,9 +21,18 @@ const LOCAL_ROOT = process.env.VERCEL
     : path.join(process.cwd(), ".local-uploads");
 
 // Resolve an s3Key to a local path, guarding against path traversal.
+//
+// The old approach — stripping "../" with a single regex pass — was bypassable:
+// "....//" collapses back to "../" after one non-recursive replace. Instead we
+// resolve the full path and require it to stay inside LOCAL_ROOT, which no crafted
+// key (traversal, absolute, symlink-free) can escape.
 function localPathForKey(s3Key: string): string {
-    const safe = s3Key.replace(/\.\.[/\\]/g, "");
-    return path.join(LOCAL_ROOT, safe);
+    const resolved = path.resolve(LOCAL_ROOT, s3Key);
+    const root = path.resolve(LOCAL_ROOT);
+    if (resolved !== root && !resolved.startsWith(root + path.sep)) {
+        throw new Error("Invalid storage key");
+    }
+    return resolved;
 }
 
 /** Read a locally-stored object (dev fallback). */

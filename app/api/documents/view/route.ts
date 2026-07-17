@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -29,10 +29,8 @@ function contentTypeFromName(name: string): string {
  */
 export async function GET(req: Request) {
     try {
-        const session = await auth();
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const guard = await requireAuth();
+        if (!guard.ok) return guard.response;
 
         const { searchParams } = new URL(req.url);
         const s3Key = searchParams.get("key");
@@ -40,14 +38,14 @@ export async function GET(req: Request) {
             return NextResponse.json({ error: "Missing key" }, { status: 400 });
         }
 
-        const isAdmin = ADMIN_ROLES.includes(session.user.role ?? "");
+        const isAdmin = ADMIN_ROLES.includes(guard.session.user.role);
         if (!isAdmin) {
             // Ownership check: the key must belong to one of the caller's records.
             const [doc, inv, sr] = await Promise.all([
-                prisma.document.findFirst({ where: { s3Key, userId: session.user.id }, select: { id: true } }),
-                prisma.platformInvoice.findFirst({ where: { s3Key, userId: session.user.id }, select: { id: true } }),
+                prisma.document.findFirst({ where: { s3Key, userId: guard.session.user.id }, select: { id: true } }),
+                prisma.platformInvoice.findFirst({ where: { s3Key, userId: guard.session.user.id }, select: { id: true } }),
                 prisma.serviceRequest.findFirst({
-                    where: { filedAcknowledgementS3Key: s3Key, userId: session.user.id },
+                    where: { filedAcknowledgementS3Key: s3Key, userId: guard.session.user.id },
                     select: { id: true },
                 }),
             ]);

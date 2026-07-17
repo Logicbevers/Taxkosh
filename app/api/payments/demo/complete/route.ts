@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { isDemoCheckoutAllowed } from "@/lib/razorpay";
 import { finalizePaidServiceRequest } from "@/lib/payments";
@@ -13,10 +13,8 @@ import { finalizePaidServiceRequest } from "@/lib/payments";
  *  - only PAYMENT_PENDING requests are eligible
  */
 export async function POST(req: Request) {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     // Hard stop: refused when real Razorpay keys exist, or when demo checkout
     // has been explicitly disabled (ALLOW_DEMO_CHECKOUT=false) on a live site.
@@ -35,7 +33,7 @@ export async function POST(req: Request) {
             select: { id: true, userId: true, status: true, amount: true },
         });
 
-        if (!sr || sr.userId !== session.user.id) {
+        if (!sr || sr.userId !== guard.session.user.id) {
             return NextResponse.json({ error: "Service request not found" }, { status: 404 });
         }
         if (sr.status !== "PAYMENT_PENDING") {

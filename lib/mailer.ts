@@ -56,9 +56,18 @@ export async function sendMail(opts: {
     }
 
     try {
-        await getClient(key).emails.send({ from: FROM, to, subject, html, attachments });
+        // The Resend SDK resolves with { data, error } instead of throwing on API
+        // failures — an unverified domain, a bad key, a bounce. Ignoring `error` made
+        // every failed send report success: callers were told the mail was delivered,
+        // nothing was logged, and register's fallback never fired.
+        const { error } = await getClient(key).emails.send({ from: FROM, to, subject, html, attachments });
+        if (error) {
+            console.error(`Email send failed: "${subject}" to ${to}`, error);
+            return { sent: false };
+        }
         return { sent: true };
     } catch (e) {
+        // Still needed: network/transport errors do throw.
         console.error(`Email send failed: "${subject}" to ${to}`, e);
         return { sent: false };
     }

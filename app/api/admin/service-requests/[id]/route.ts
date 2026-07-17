@@ -92,11 +92,14 @@ export async function GET(
                 },
                 service: true,
                 plan: true,
-                internalNotes: { 
+                internalNotes: {
                     include: { author: true },
-                    orderBy: { createdAt: "desc" } 
+                    orderBy: { createdAt: "desc" }
                 },
-                documents: true
+                // Oldest first: the detail view keys documents by label, last one wins,
+                // so a re-upload of the same label must land after the file it replaces
+                // rather than depending on unordered rows.
+                documents: { orderBy: { uploadedAt: "asc" } }
             }
         });
 

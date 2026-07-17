@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const { searchParams } = new URL(req.url);
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
             _sum: { totalTds: true },
             where: {
                 tdsReturn: {
-                    userId: session.user.id,
+                    userId: guard.session.user.id,
                     financialYear: fy
                 }
             }
@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
             _sum: { amount: true },
             where: {
                 tdsReturn: {
-                    userId: session.user.id,
+                    userId: guard.session.user.id,
                     financialYear: fy
                 }
             }

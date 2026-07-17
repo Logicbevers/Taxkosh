@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 function generateAckNumber(): string {
@@ -12,16 +12,14 @@ function generateAckNumber(): string {
 }
 
 export async function POST() {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         // Find the user's draft for current AY
         const existing = await prisma.taxReturn.findFirst({
             where: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 assessmentYear: "2025-26",
             },
         });
@@ -70,7 +68,7 @@ export async function POST() {
         const { logAudit } = await import("@/lib/prisma");
         const { AuditAction } = await import("@prisma/client");
         await logAudit({
-            userId: session.user.id,
+            userId: guard.session.user.id,
             action: AuditAction.ITR_SUBMISSION,
             entityId: updated.id,
             entityType: "TaxReturn",

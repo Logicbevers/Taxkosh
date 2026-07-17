@@ -1,0 +1,199 @@
+name: CI
+
+# The gate for main. Runs on every PR into main and every push to main, so a change
+# cannot reach the branch we deploy from without passing these checks.
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+
+concurrency:
+  # A new push supersedes the run in progress for the same ref — don't burn minutes
+  # finishing a run whose result nobody will read.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Fast feedback. Fails in ~2 minutes on the mistakes that happen most often, so a
+  # typo doesn't wait on a browser suite to tell you about it.
+  static:
+    name: Typecheck, lint & build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Need history to diff against the base ref for the lint step.
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Generate Prisma client
+        run: npx prisma generate
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Lint changed files
+        # Only files this change touches. A blanket `eslint app lib components` reports
+        # 56 pre-existing errors (43 of them no-explicit-any), so it would fail every
+        # PR on day one and train everyone to ignore CI. This gates new code while the
+        # backlog is paid down; widen the scope once it reaches zero.
+        run: |
+          BASE="${{ github.base_ref }}"
+          if [ -n "$BASE" ]; then
+            git fetch origin "$BASE" --depth=1
+            RANGE="origin/$BASE...HEAD"
+          else
+            RANGE="HEAD~1...HEAD"
+          fi
+          FILES=$(git diff --name-only --diff-filter=d "$RANGE" -- '*.ts' '*.tsx' | grep -vE '^tests/' || true)
+          if [ -z "$FILES" ]; then echo "No TypeScript changes to lint."; exit 0; fi
+          echo "Linting:"; echo "$FILES" | sed 's/^/  /'
+          npx eslint $FILES
+      - name: Production build
+        run: npm run build
+        env:
+          # Build-time only. lib/env.ts fails the build without these; they are
+          # placeholders and never touch a real service.
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/taxkosh_test
+          AUTH_SECRET: ci-build-secret-not-used-at-runtime
+          ENCRYPTION_KEY: ci-build-encryption-key-32-chars-min
+          NEXT_PUBLIC_APP_URL: https://www.taxkosh.com
+
+  # Browser tests that pass today. See "Quarantined specs" at the bottom of this file
+  # before adding more — most of the suite is stale, and a permanently red pipeline
+  # is worse than a narrow green one because people stop reading it.
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: taxkosh_test
+        ports: ['5432:5432']
+        # Without this the suite races the database and fails on connection refused.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # Name contains "test" — global-setup refuses to seed anything else.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/taxkosh_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/taxkosh_test
+      AUTH_SECRET: ci-e2e-secret
+      AUTH_TRUST_HOST: 'true'
+      ENCRYPTION_KEY: ci-e2e-encryption-key-32-chars-minimum
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # Deliberately no RESEND_API_KEY / RAZORPAY / AWS keys: CI must never send a
+      # real email, charge a real card, or write to a real bucket. Each has a
+      # documented fallback (simulated mail, demo checkout, local disk).
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Write .env.test
+        # playwright.config + global-setup read this file, not the process env.
+        run: |
+          cat > .env.test <<EOF
+          DATABASE_URL="${DATABASE_URL}"
+          DIRECT_URL="${DIRECT_URL}"
+          AUTH_SECRET="${AUTH_SECRET}"
+          AUTH_TRUST_HOST="true"
+          ENCRYPTION_KEY="${ENCRYPTION_KEY}"
+          NEXT_PUBLIC_APP_URL="http://localhost:3000"
+          EOF
+      - name: Create schema
+        run: npx dotenv -e .env.test -- npx prisma db push --skip-generate
+      - name: Install browsers
+        run: npx playwright install --with-deps chromium
+      - name: Seed catalog
+        run: npx dotenv -e .env.test -- node prisma/seed.mjs
+      - name: Run Playwright (green specs)
+        # Explicit file list, not the whole suite. 21 of 26 tests currently fail —
+        # they assert UI that changed months ago (see the quarantine list below).
+        # Delete this argument list the day the full suite is green.
+        run: npx playwright test tests/auth.spec.ts tests/security.spec.ts
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7
+
+  # Business-rule checks that need a database but not a browser — far cheaper than
+  # an e2e test, and they cover the bugs that actually shipped: a checkout retry
+  # stranding the customer's documents, and unrelated files attaching to a request.
+  invariants:
+    name: Payment & document invariants
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: taxkosh_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/taxkosh_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/taxkosh_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - run: npx prisma db push --skip-generate
+      - name: Seed catalog
+        run: node prisma/seed.mjs
+      - name: Checkout retry must not strand documents
+        run: node tests/pending-request-reuse.mjs
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Quarantined specs — NOT run above because they fail today (21 of 26).
+#
+# They are stale, not flaky: tests/ has not been touched since 2026-03-12 while the
+# app was rewritten around it. TC-AUTH-01 was typical — it asserted a redirect to
+# /dashboard, but sign-in has landed on "/" deliberately since 2026-07-09. One line
+# to fix, and it had been red for four months because nothing ran the suite.
+#
+# Repair and move each into the `run` step above as it goes green. Do not "fix" them
+# by relaxing assertions — they cover the flows that carry money and documents:
+#
+#   admin.spec.ts             TC-ADMIN-01 view service request
+#   audit-logs.spec.ts        audit log lifecycle
+#   documents.spec.ts         TC-DOC-01 upload document
+#   gst.spec.ts               TC-GST-01/02/03 invoice math, profile, GSTR-1 export
+#   itr.spec.ts               TC-ITR-01/02 builder flow
+#   itr-advanced.spec.ts      TC-ITR-04/05 submission, draft persistence
+#   payments.spec.ts          payment page + success path
+#   rbac.spec.ts              TC-RBAC-01 individual cannot reach admin
+#   registration.spec.ts      TC-REG-01/02 individual + business signup
+#   service-lifecycle.spec.ts full lifecycle journey
+#   services.spec.ts          TC-SERVICE-01/02 create request, payment page
+#   tds.spec.ts               deductees + quarterly returns
+#   tds-advanced.spec.ts      TC-TDS-01/02/03 deductee, draft, challan mapping
+#
+# rbac.spec.ts and payments.spec.ts are the ones to fix first: they assert
+# authorisation and money, which is exactly what you least want to regress silently.
+# ─────────────────────────────────────────────────────────────────────────────

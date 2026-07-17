@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { encrypt } from "@/lib/security";
 import { z } from "zod";
@@ -11,12 +11,12 @@ const createDeducteeSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const deductees = await prisma.tdsDeductee.findMany({
-            where: { userId: session.user.id }
+            where: { userId: guard.session.user.id }
         });
         return NextResponse.json(deductees);
     } catch (error) {
@@ -26,8 +26,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const body = await req.json();
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
 
         const deductee = await prisma.tdsDeductee.create({
             data: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 name,
                 pan: encryptedPan,
                 category

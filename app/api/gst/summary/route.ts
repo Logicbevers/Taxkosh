@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(req: NextRequest) {
-    const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     const { searchParams } = new URL(req.url);
     const month = searchParams.get("month"); // e.g. "2025-06"
@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
                 totalAmount: true
             },
             where: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 type: 'SALES',
                 ...(month ? { date: dateFilter } : {})
             }
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
                 totalAmount: true
             },
             where: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 type: 'PURCHASE',
                 ...(month ? { date: dateFilter } : {})
             }

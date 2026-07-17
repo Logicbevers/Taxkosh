@@ -13,6 +13,8 @@ interface CheckoutButtonProps {
     title: string;
     amount: number; // in paise
     autoCheckout?: boolean;
+    /** Documents uploaded before this request existed; attached to it at checkout. */
+    documentIds?: string[];
 }
 
 interface RazorpayOptions {
@@ -39,7 +41,7 @@ declare global {
     }
 }
 
-export function CheckoutButton({ serviceId, planId, title, amount, autoCheckout }: CheckoutButtonProps) {
+export function CheckoutButton({ serviceId, planId, title, amount, autoCheckout, documentIds }: CheckoutButtonProps) {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
     const { data: session } = useSession()
@@ -64,7 +66,7 @@ export function CheckoutButton({ serviceId, planId, title, amount, autoCheckout 
         try {
             const response = await fetch("/api/payments/razorpay/create-order", {
                 method: "POST",
-                body: JSON.stringify({ serviceId, planId }),
+                body: JSON.stringify({ serviceId, planId, documentIds }),
                 headers: { "Content-Type": "application/json" }
             })
             const orderData = await response.json()

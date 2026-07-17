@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isDisposableEmail } from "@/lib/disposable-emails";
 
 // Shared field validators reused by signup + the KYC/profile form.
 export const panSchema = z
@@ -23,14 +24,24 @@ export const phoneSchema = z
 export const registerSchema = z
     .object({
         name: z.string().min(2, "Name must be at least 2 characters"),
-        email: z.string().email("Please enter a valid email address"),
+        // The register API parses with this same schema, so the block is enforced
+        // server-side too — not just in the browser form.
+        email: z
+            .string()
+            .email("Please enter a valid email address")
+            .refine((e) => !isDisposableEmail(e), {
+                message: "Temporary inboxes aren't accepted. Please use a permanent email address — it's how you'll recover your account and receive filing documents.",
+            }),
         password: z
             .string()
             .min(8, "Password must be at least 8 characters")
             .regex(/[A-Z]/, "Must contain at least one uppercase letter")
             .regex(/[0-9]/, "Must contain at least one number"),
         confirmPassword: z.string(),
-        role: z.enum(["INDIVIDUAL", "BUSINESS", "CA"]),
+        // CA is intentionally NOT self-selectable: it is a professional role that can
+        // view other people's filings, so it must be granted by an admin (via the
+        // customer import / admin console), never chosen at public signup.
+        role: z.enum(["INDIVIDUAL", "BUSINESS"]),
         terms: z.boolean().refine((v) => v === true, "You must accept the terms"),
     })
     .refine((data) => data.password === data.confirmPassword, {

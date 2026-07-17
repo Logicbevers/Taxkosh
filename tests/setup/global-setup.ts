@@ -4,27 +4,32 @@ import bcrypt from 'bcryptjs';
 import * as dotenv from 'dotenv';
 import path from 'path';
 
-async function globalSetup(config: FullConfig) {
-    // Load .env explicitly
-    const envPath = path.resolve(process.cwd(), '.env');
-    const result = dotenv.config({ path: envPath });
-
-    console.log('--- Global Setup: Environment Debug ---');
-    console.log('Env Path:', envPath);
-    console.log('Dotenv Load Result:', result.error ? 'Error: ' + result.error : 'Success');
+async function globalSetup(_config: FullConfig) {
+    // .env.test, never .env — this file runs deleteMany. Loading .env pointed the
+    // suite at the working dev database, where it would have wiped real rows.
+    const envPath = path.resolve(process.cwd(), '.env.test');
+    const result = dotenv.config({ path: envPath, override: true });
+    if (result.error) {
+        throw new Error(`Cannot run e2e tests: ${envPath} is missing or unreadable.`);
+    }
 
     const dbUrl = process.env.DATABASE_URL || '';
-    console.log('Raw DATABASE_URL from ENV:', dbUrl);
 
-    const prisma = new PrismaClient();
+    // A hard stop, not a warning. The previous version logged a warning with the
+    // exit commented out, so a misconfigured DATABASE_URL would silently destroy
+    // data instead of failing. Never soften this back into a console.warn.
+    const dbName = dbUrl.split('/').pop()?.split('?')[0] ?? '';
+    if (!/test/i.test(dbName)) {
+        throw new Error(
+            `Refusing to run e2e tests against database "${dbName}" — its name must contain "test".\n` +
+            `This suite deletes and rewrites rows. Point DATABASE_URL in .env.test at a throwaway database.`
+        );
+    }
+
+    console.log(`--- Global Setup: seeding "${dbName}" ---`);
+    const prisma = new PrismaClient({ datasources: { db: { url: dbUrl } } });
 
     try {
-        // Clear existing test data
-        if (!dbUrl.includes('test') && !dbUrl.includes('localhost')) {
-            console.warn('WARNING: Global setup might be running on a non-local/test database. Proceed with CAUTION.');
-            // process.exit(1); 
-        }
-
         await prisma.user.deleteMany({ where: { email: { contains: '@test.com' } } });
 
         const hashedPassword = await bcrypt.hash('Password123!', 12);
@@ -112,7 +117,10 @@ async function globalSetup(config: FullConfig) {
 
         console.log('--- Global Setup: Done ---');
     } catch (error) {
+        // Rethrow: swallowing this let the whole suite run against an unseeded
+        // database, turning one setup failure into a wall of unrelated test failures.
         console.error('Global setup failed:', error);
+        throw error;
     } finally {
         await prisma.$disconnect();
     }

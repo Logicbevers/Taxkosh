@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import z from "zod";
 
@@ -11,17 +11,15 @@ const createRequestSchema = z.object({
 
 export async function POST(req: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const guard = await requireAuth();
+        if (!guard.ok) return guard.response;
 
         const json = await req.json();
         const body = createRequestSchema.parse(json);
 
         const serviceRequest = await prisma.serviceRequest.create({
             data: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 serviceId: body.serviceId,
                 planId: body.planId,
                 notes: body.notes,
@@ -41,10 +39,8 @@ export async function POST(req: Request) {
 
 export async function GET(req: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const guard = await requireAuth();
+        if (!guard.ok) return guard.response;
 
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
@@ -53,7 +49,7 @@ export async function GET(req: Request) {
             const serviceRequest = await prisma.serviceRequest.findUnique({
                 where: {
                     id,
-                    userId: session.user.id, // Ensure they only fetch their own
+                    userId: guard.session.user.id, // Ensure they only fetch their own
                 },
                 include: {
                     documents: true,
@@ -69,7 +65,7 @@ export async function GET(req: Request) {
 
         const serviceRequests = await prisma.serviceRequest.findMany({
             where: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
             },
             include: {
                 documents: true,

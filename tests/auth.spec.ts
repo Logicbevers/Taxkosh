@@ -8,7 +8,12 @@ test.describe('Authentication', () => {
         await page.fill('input[name="email"]', 'individual@test.com');
         await page.fill('input[name="password"]', 'Password123!');
         await page.click('button[type="submit"]');
-        await expect(page).toHaveURL(/.*dashboard/, { timeout: 20000 });
+        // Sign-in lands on the browsable home page, not /dashboard — deliberate, see
+        // login-form.tsx ("callbackUrl ?? '/'"). Deep links still win via ?callbackUrl.
+        await expect(page).toHaveURL(/localhost:3000\/$/, { timeout: 20000 });
+        // The URL alone proves nothing about auth; the signed-in nav does.
+        await expect(page.getByRole('link', { name: /dashboard/i }).first())
+            .toBeVisible({ timeout: 20000 });
     });
 
     test('TC-AUTH-02 Invalid Login', async ({ page }) => {

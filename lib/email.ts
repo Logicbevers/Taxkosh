@@ -5,7 +5,10 @@ const APP_URL = emailBaseUrl();
 
 // ─── Email Verification ─────────────────────────────────────
 export async function sendVerificationEmail(email: string, token: string) {
-    const verifyUrl = `${APP_URL}/verify-email?token=${token}`;
+    // /api/verify-email, not /verify-email — there is no page at the latter, so the
+    // link in every verification email 404'd and no signup could ever verify. The
+    // route validates the token and redirects on to /login?verified=true.
+    const verifyUrl = `${APP_URL}/api/verify-email?token=${token}`;
     const { subject, html } = verificationEmail(verifyUrl);
     const res = await sendMail({ to: email, subject, html });
     if (res.simulated) {

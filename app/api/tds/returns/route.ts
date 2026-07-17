@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { TdsFormType, TdsReturnStatus } from "@prisma/client";
 import { z } from "zod";
@@ -11,12 +11,12 @@ const createTdsReturnSchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const returns = await prisma.tdsReturn.findMany({
-            where: { userId: session.user.id },
+            where: { userId: guard.session.user.id },
             include: {
                 _count: {
                     select: { entries: true, challans: true }
@@ -31,8 +31,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const body = await req.json();
@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         const existing = await prisma.tdsReturn.findUnique({
             where: {
                 userId_financialYear_quarter_formType: {
-                    userId: session.user.id,
+                    userId: guard.session.user.id,
                     financialYear,
                     quarter,
                     formType,
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
 
         const tdsReturn = await prisma.tdsReturn.create({
             data: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 financialYear,
                 quarter,
                 formType,

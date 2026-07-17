@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { finalizePaidServiceRequest } from "@/lib/payments";
 
@@ -15,10 +15,8 @@ import { finalizePaidServiceRequest } from "@/lib/payments";
  * (finalizePaidServiceRequest is a no-op once the request is already PAID).
  */
 export async function POST(req: Request) {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
@@ -53,7 +51,7 @@ export async function POST(req: Request) {
             where: { razorpayOrderId: razorpay_order_id },
             select: { id: true, userId: true, amount: true },
         });
-        if (!serviceReq || serviceReq.userId !== session.user.id) {
+        if (!serviceReq || serviceReq.userId !== guard.session.user.id) {
             return NextResponse.json({ error: "Order not found" }, { status: 404 });
         }
 

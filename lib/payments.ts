@@ -6,6 +6,80 @@ import { sendMail } from "@/lib/mailer";
 import { paymentReceiptEmail } from "@/lib/email-templates";
 
 /**
+ * Documents uploaded during the pre-payment purchase flow are created before the
+ * service request exists, so they land with serviceRequestId = null. The client
+ * remembers the ids it just uploaded and passes them at checkout, so we attach
+ * exactly those — anything looser guesses wrong. An earlier version claimed every
+ * unassigned document the user had, which swept in stale abandoned uploads from
+ * unrelated services (a months-old "Form 16" landing on a GST registration) and
+ * could shadow the real file where the admin UI keys documents by label.
+ *
+ * The where-clause doubles as the authorization check: userId pins ownership, and
+ * the null guards stop a caller from stealing a document off another request.
+ * Returns how many were actually attached.
+ */
+export async function linkDocumentsToRequest(
+    userId: string,
+    serviceRequestId: string,
+    documentIds: string[],
+): Promise<number> {
+    if (documentIds.length === 0) return 0;
+    const { count } = await prisma.document.updateMany({
+        where: { id: { in: documentIds }, userId, serviceRequestId: null, taxReturnId: null },
+        data: { serviceRequestId },
+    });
+    return count;
+}
+
+/**
+ * A retry — dismissed Razorpay modal, double-clicked button, re-fired autoCheckout —
+ * must reuse the pending request rather than open a second one. linkLooseDocuments
+ * only claims *unassigned* documents, so a fresh request would start empty while the
+ * user's uploads stay stranded on the abandoned request, invisible to the admin. That
+ * forces the customer to upload everything a second time from the status screen.
+ */
+export async function findOrCreatePendingRequest(args: {
+    userId: string;
+    serviceId?: string;
+    planId?: string;
+    amountPaise: number;
+    razorpayOrderId: string;
+}) {
+    const { userId, serviceId, planId, amountPaise, razorpayOrderId } = args;
+
+    const existing = await prisma.serviceRequest.findFirst({
+        // `?? null` is load-bearing: Prisma drops an `undefined` filter entirely,
+        // which would match a pending request for a different service or plan.
+        where: {
+            userId,
+            serviceId: serviceId ?? null,
+            planId: planId ?? null,
+            status: "PAYMENT_PENDING",
+        },
+    });
+
+    if (existing) {
+        // /verify resolves the request by razorpayOrderId, so it has to track the
+        // newest order — the previous order was abandoned.
+        return prisma.serviceRequest.update({
+            where: { id: existing.id },
+            data: { amount: amountPaise, razorpayOrderId },
+        });
+    }
+
+    return prisma.serviceRequest.create({
+        data: {
+            userId,
+            serviceId,
+            planId,
+            status: "PAYMENT_PENDING",
+            amount: amountPaise,
+            razorpayOrderId,
+        },
+    });
+}
+
+/**
  * Transition a PAYMENT_PENDING service request to PAID and run all downstream
  * side effects: generate + store the GST invoice, notify the user, and email
  * the receipt. Shared by the Razorpay webhook (real payments) and the demo

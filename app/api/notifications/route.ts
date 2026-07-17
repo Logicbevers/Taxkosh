@@ -1,22 +1,20 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const notifications = await prisma.notification.findMany({
-            where: { userId: session.user.id },
+            where: { userId: guard.session.user.id },
             orderBy: { createdAt: "desc" },
             take: 20
         });
 
         const unreadCount = await prisma.notification.count({
-            where: { userId: session.user.id, isRead: false }
+            where: { userId: guard.session.user.id, isRead: false }
         });
 
         return NextResponse.json({ notifications, unreadCount });
@@ -27,14 +25,12 @@ export async function GET() {
 }
 
 export async function PATCH() {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         await prisma.notification.updateMany({
-            where: { userId: session.user.id, isRead: false },
+            where: { userId: guard.session.user.id, isRead: false },
             data: { isRead: true }
         });
 

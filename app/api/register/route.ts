@@ -39,9 +39,10 @@ export async function POST(req: NextRequest) {
 
         const hashedPassword = await bcrypt.hash(password, 12);
 
-        // Belt-and-suspenders: self-registration can never produce an ADMIN account,
-        // even if the schema validation is ever relaxed.
-        const safeRole = (["INDIVIDUAL", "BUSINESS", "CA"] as const).includes(role as never)
+        // Belt-and-suspenders: self-registration can never produce a privileged
+        // account (ADMIN, or CA — which can view other people's filings), even if the
+        // schema validation is ever relaxed. Anything unexpected falls back to INDIVIDUAL.
+        const safeRole = (["INDIVIDUAL", "BUSINESS"] as const).includes(role as never)
             ? role
             : ("INDIVIDUAL" as const);
 
@@ -86,10 +87,21 @@ export async function POST(req: NextRequest) {
             console.error("Failed to send verification email:", emailErr);
         }
 
-        // No email provider configured → the verification link can never reach
-        // the user, which would dead-end every signup. Auto-verify instead.
-        // This branch disables itself as soon as RESEND_API_KEY is set.
+        // No email provider configured → the verification link can never reach the
+        // user, which would dead-end every signup. Auto-verify so local/preview work.
+        //
+        // Never in production: there, a failed send is an outage (Resend quota, DNS,
+        // bounce), not an absent provider. Auto-verifying then would hand out verified
+        // accounts for addresses nobody proved they own — letting anyone squat a real
+        // person's email. Fail loudly instead and let them retry.
         if (!emailDelivered) {
+            if (process.env.NODE_ENV === "production") {
+                console.error(`[register] verification email failed for ${email} — account left unverified`);
+                return NextResponse.json(
+                    { error: "We couldn't send your verification email. Please try again in a moment, or contact support@taxkosh.com." },
+                    { status: 503 }
+                );
+            }
             await prisma.user.update({
                 where: { id: user.id },
                 data: { emailVerified: new Date() },

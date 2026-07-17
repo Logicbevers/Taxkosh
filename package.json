@@ -10,7 +10,12 @@
     "db:seed": "node prisma/seed.mjs",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:server": "next dev -p 3002"
+    "test:server": "next dev -p 3002",
+    "typecheck": "tsc --noEmit",
+    "lint:app": "eslint app lib components proxy.ts",
+    "test:invariants": "dotenv -e .env.test -- node tests/pending-request-reuse.mjs",
+    "test:db:setup": "dotenv -e .env.test -- prisma db push --skip-generate",
+    "verify": "npm run typecheck && npm run lint:app && npm run test:invariants"
   },
   "prisma": {
     "seed": "node prisma/seed.mjs"

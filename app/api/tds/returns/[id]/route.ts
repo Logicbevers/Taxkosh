@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { calculateTds } from "@/lib/tds";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const resolvedParams = await params;
         const tdsReturn = await prisma.tdsReturn.findFirst({
-            where: { id: resolvedParams.id, userId: session.user.id },
+            where: { id: resolvedParams.id, userId: guard.session.user.id },
             include: {
                 entries: { include: { deductee: true } },
                 challans: true
@@ -30,8 +30,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
  * Add an Entry or Challan to the return
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const body = await req.json();
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
         const resolvedParams = await params;
         const tdsReturn = await prisma.tdsReturn.findFirst({
-            where: { id: resolvedParams.id, userId: session.user.id }
+            where: { id: resolvedParams.id, userId: guard.session.user.id }
         });
 
         if (!tdsReturn) return NextResponse.json({ error: "Return not found" }, { status: 404 });

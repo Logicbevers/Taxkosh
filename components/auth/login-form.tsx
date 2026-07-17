@@ -216,6 +216,17 @@ export function LoginForm({ googleEnabled = false }: { googleEnabled?: boolean }
                 </Button>
             </form>
 
+            {/* Always visible, not gated on an error: authorize() returns null for an
+                unverified user, which next-auth reports as CredentialsSignin — identical
+                to a wrong password. So we can't detect the case to offer this at the right
+                moment, and a stuck user is told only "Invalid email or password". */}
+            <p className="text-center text-xs text-muted-foreground mt-5">
+                Didn&apos;t receive a verification email?{" "}
+                <Link href="/resend-verification" className="text-primary hover:underline">
+                    Resend it
+                </Link>
+            </p>
+
             <p className="text-center text-xs text-muted-foreground mt-6">
                 By continuing you agree to TaxKosh&apos;s{" "}
                 <Link href="/terms" className="text-primary hover:underline">Terms</Link>

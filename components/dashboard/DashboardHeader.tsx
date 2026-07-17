@@ -44,6 +44,9 @@ export function DashboardHeader({ user }: { user: User }) {
     // between SSR and client (next-themes shifts the fiber counter), so mount
     // them only after hydration to avoid an id mismatch.
     const [mounted, setMounted] = useState(false);
+    // Deliberate: the one-shot hydration flag described above, not derived state. It
+    // sets once on mount, so the cascading render this rule guards against can't occur.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     useEffect(() => setMounted(true), []);
     const linkClass = (href: string) =>
         cn(
@@ -99,7 +102,10 @@ export function DashboardHeader({ user }: { user: User }) {
                     </Sheet>
                     )}
 
-                    <Link href="/dashboard" className="flex items-center">
+                    {/* Home, not /dashboard: the logo was the only plausible way back to the
+                        public site and it pointed at the page you were already on, leaving no
+                        route out of the dashboard. The nav below still links to /dashboard. */}
+                    <Link href="/" className="flex items-center" aria-label="TaxKosh home">
                         <Logo size="md" className="[&>span:last-child]:hidden sm:[&>span:last-child]:inline-flex" />
                     </Link>
 

@@ -1,30 +1,22 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { razorpay, isRazorpayConfigured, isDemoCheckoutAllowed } from "@/lib/razorpay";
-
-/**
- * Documents uploaded during the pre-payment purchase flow are created before the
- * service request exists, so they have serviceRequestId = null. Once the request
- * is created, claim the user's loose (unassigned) documents for it, otherwise the
- * admin can never see them and the document-requirement gate blocks processing.
- */
-async function linkLooseDocuments(userId: string, serviceRequestId: string) {
-    await prisma.document.updateMany({
-        where: { userId, serviceRequestId: null, taxReturnId: null },
-        data: { serviceRequestId },
-    });
-}
+import { findOrCreatePendingRequest, linkDocumentsToRequest } from "@/lib/payments";
 
 export async function POST(req: Request) {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const body = await req.json();
         const { serviceId, planId } = body;
+
+        // The ids the client uploaded during this checkout. Untrusted — ownership is
+        // enforced in linkDocumentsToRequest, this only shapes the input.
+        const documentIds: string[] = Array.isArray(body.documentIds)
+            ? body.documentIds.filter((d: unknown): d is string => typeof d === "string")
+            : [];
 
         // Always derive the charge from the server-side price — never trust the client's amount.
         let amountPaise: number;
@@ -55,17 +47,14 @@ export async function POST(req: Request) {
             );
         }
         if (!isRazorpayConfigured()) {
-            const serviceReq = await prisma.serviceRequest.create({
-                data: {
-                    userId: session.user.id,
-                    serviceId,
-                    planId,
-                    status: "PAYMENT_PENDING",
-                    amount: amountPaise,
-                    razorpayOrderId: `demo_order_${Date.now()}`,
-                },
+            const serviceReq = await findOrCreatePendingRequest({
+                userId: guard.session.user.id,
+                serviceId,
+                planId,
+                amountPaise,
+                razorpayOrderId: `demo_order_${Date.now()}`,
             });
-            await linkLooseDocuments(session.user.id, serviceReq.id);
+            await linkDocumentsToRequest(guard.session.user.id, serviceReq.id, documentIds);
             return NextResponse.json({
                 success: true,
                 demoMode: true,
@@ -77,7 +66,7 @@ export async function POST(req: Request) {
 
         // We use a stable receipt id so we can reconcile even if the DB write
         // happens after the Razorpay order is created.
-        const receiptId = `sr_${session.user.id.slice(-6)}_${Date.now()}`;
+        const receiptId = `sr_${guard.session.user.id.slice(-6)}_${Date.now()}`;
 
         // 1. Create the Razorpay order FIRST. If the gateway is unavailable
         //    (missing/invalid keys, network), we bail out here and never create
@@ -101,18 +90,15 @@ export async function POST(req: Request) {
         }
 
         // 2. Only now persist the pending service request, with the order id set.
-        const serviceReq = await prisma.serviceRequest.create({
-            data: {
-                userId: session.user.id,
-                serviceId,
-                planId,
-                status: "PAYMENT_PENDING",
-                amount: amountPaise,
-                razorpayOrderId: orderId,
-            },
+        const serviceReq = await findOrCreatePendingRequest({
+            userId: guard.session.user.id,
+            serviceId,
+            planId,
+            amountPaise,
+            razorpayOrderId: orderId,
         });
 
-        await linkLooseDocuments(session.user.id, serviceReq.id);
+        await linkDocumentsToRequest(guard.session.user.id, serviceReq.id, documentIds);
 
         return NextResponse.json({
             success: true,

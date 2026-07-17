@@ -1,4 +1,4 @@
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
@@ -23,10 +23,8 @@ export async function GET(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const guard = await requireAuth();
+        if (!guard.ok) return guard.response;
 
         const resolvedParams = await params;
         const id = resolvedParams.id;
@@ -39,7 +37,7 @@ export async function GET(
         if (type === "filed") {
             // Fetch the service request to get the filed acknowledgement key
             const serviceRequest = await prisma.serviceRequest.findUnique({
-                where: { id, userId: session.user.role === "ADMIN" ? undefined : session.user.id }
+                where: { id, userId: guard.session.user.role === "ADMIN" ? undefined : guard.session.user.id }
             });
 
             if (!serviceRequest || !serviceRequest.filedAcknowledgementS3Key) {
@@ -60,7 +58,7 @@ export async function GET(
             }
 
             // Authorization check
-            if (session.user.role !== "ADMIN" && target.userId !== session.user.id) {
+            if (guard.session.user.role !== "ADMIN" && target.userId !== guard.session.user.id) {
                 return NextResponse.json({ error: "Forbidden" }, { status: 403 });
             }
 
@@ -73,7 +71,7 @@ export async function GET(
         const { logAudit } = await import("@/lib/prisma");
         const { AuditAction } = await import("@prisma/client");
         await logAudit({
-            userId: session.user.id,
+            userId: guard.session.user.id,
             action: AuditAction.DOCUMENT_VIEW,
             entityId: id,
             entityType: type === "filed" ? "ServiceRequest" : "Document",

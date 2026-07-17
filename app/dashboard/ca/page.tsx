@@ -7,6 +7,10 @@ import Link from "next/link";
 export default async function CADashboard() {
     const session = await auth();
     if (!session) redirect("/login");
+    // Defense in depth: proxy.ts already gates this route by role, but a page that can
+    // surface other clients' filings must not depend on the middleware matcher alone —
+    // one matcher change (which has happened here before) would silently expose it.
+    if (session.user.role !== "CA" && session.user.role !== "ADMIN") redirect("/unauthorized");
 
     return (
         <div className="flex">

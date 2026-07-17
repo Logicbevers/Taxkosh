@@ -40,6 +40,12 @@ interface DocState {
     uploading: boolean;
     uploaded: boolean;
     fileName?: string;
+    /**
+     * Id returned by /api/documents/upload. These uploads happen before the service
+     * request exists, so checkout passes the ids back to attach exactly them —
+     * see linkDocumentsToRequest.
+     */
+    documentId?: string;
 }
 
 export function ServicePurchaseFlow({
@@ -102,7 +108,9 @@ export function ServicePurchaseFlow({
 
             setDocs((prev) =>
                 prev.map((d, i) =>
-                    i === index ? { ...d, uploading: false, uploaded: true, fileName: file.name } : d
+                    i === index
+                        ? { ...d, uploading: false, uploaded: true, fileName: file.name, documentId: data.document?.id }
+                        : d
                 )
             );
             toast.success(`${docs[index].label} uploaded`);
@@ -263,6 +271,7 @@ export function ServicePurchaseFlow({
                                 title={serviceName}
                                 amount={price * 100}
                                 autoCheckout={autoCheckout}
+                                documentIds={docs.map((d) => d.documentId).filter((id): id is string => Boolean(id))}
                             />
                         ) : (
                             <Button

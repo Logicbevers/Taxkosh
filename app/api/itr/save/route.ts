@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { Prisma, $Enums } from "@prisma/client";
@@ -15,10 +15,8 @@ const saveSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     const body = await req.json();
     const parsed = saveSchema.safeParse(body);
@@ -47,7 +45,7 @@ export async function POST(req: NextRequest) {
         const taxReturn = await prisma.taxReturn.upsert({
             where: {
                 userId_assessmentYear: {
-                    userId: session.user.id,
+                    userId: guard.session.user.id,
                     assessmentYear,
                 },
             },
@@ -60,7 +58,7 @@ export async function POST(req: NextRequest) {
                 selectedRegime: regime,
             },
             create: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 assessmentYear,
                 personalData: personalJson,
                 incomeData: incomeJson,

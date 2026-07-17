@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { monitoring } from "@/lib/monitoring";
 
 /**
@@ -9,11 +9,11 @@ import { monitoring } from "@/lib/monitoring";
  */
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
-        monitoring.log("Form 16 parsing initiated", "info", { userId: session.user.id });
+        monitoring.log("Form 16 parsing initiated", "info", { userId: guard.session.user.id });
 
         const formData = await req.formData();
         const file = formData.get("file") as File;
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         };
 
         monitoring.trackEvent("form16_parsed_success", {
-            userId: session.user.id,
+            userId: guard.session.user.id,
             salary: mockExtractedData.incomeFromSalary
         });
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
         });
 
     } catch (error: unknown) {
-        monitoring.captureException(error instanceof Error ? error : new Error(String(error)), { userId: session.user.id });
+        monitoring.captureException(error instanceof Error ? error : new Error(String(error)), { userId: guard.session.user.id });
         return NextResponse.json({ error: "Failed to parse document" }, { status: 500 });
     }
 }

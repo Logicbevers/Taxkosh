@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { DocumentType } from "@prisma/client";
 import { uploadToS3 } from "@/lib/s3";
@@ -15,10 +15,8 @@ const ALLOWED_TYPES = [
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session?.user?.id) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     try {
         const formData = await req.formData();
@@ -31,7 +29,7 @@ export async function POST(req: NextRequest) {
         // Validate serviceRequestId belongs to this user
         if (serviceRequestId) {
             const sr = await prisma.serviceRequest.findUnique({ where: { id: serviceRequestId } });
-            if (!sr || sr.userId !== session.user.id) {
+            if (!sr || sr.userId !== guard.session.user.id) {
                 return NextResponse.json({ error: "Invalid service request" }, { status: 403 });
             }
         }
@@ -39,7 +37,7 @@ export async function POST(req: NextRequest) {
         // Validate taxReturnId belongs to this user (IDOR guard).
         if (taxReturnId) {
             const tr = await prisma.taxReturn.findUnique({ where: { id: taxReturnId } });
-            if (!tr || tr.userId !== session.user.id) {
+            if (!tr || tr.userId !== guard.session.user.id) {
                 return NextResponse.json({ error: "Invalid tax return" }, { status: 403 });
             }
         }
@@ -94,7 +92,7 @@ export async function POST(req: NextRequest) {
         // Save metadata to DB
         const document = await prisma.document.create({
             data: {
-                userId: session.user.id,
+                userId: guard.session.user.id,
                 taxReturnId: taxReturnId || null,
                 serviceRequestId: serviceRequestId || null,
                 documentType: docType,

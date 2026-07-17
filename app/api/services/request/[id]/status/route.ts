@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { triggerStatusNotification, triggerAdminAlert } from "@/lib/notifications";
 import z from "zod";
@@ -27,10 +27,8 @@ export async function POST(
     try {
         const resolvedParams = await params;
         const id = resolvedParams.id;
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
+        const guard = await requireAuth();
+        if (!guard.ok) return guard.response;
 
         const json = await req.json();
         const body = updateStatusSchema.parse(json);
@@ -44,14 +42,14 @@ export async function POST(
         }
 
         // Must own the request.
-        if (existing.userId !== session.user.id) {
+        if (existing.userId !== guard.session.user.id) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }
 
         // Non-admin users may only transition their own request to DOCUMENTS_SUBMITTED.
         // All other status changes (COMPLETED, REJECTED, FILED, etc.) are admin-only.
         const adminRoles = ["ADMIN", "TAX_EXECUTIVE", "SENIOR_REVIEWER"];
-        const isAdmin = adminRoles.includes((session.user as { role?: string }).role ?? "");
+        const isAdmin = adminRoles.includes(guard.session.user.role);
         if (!isAdmin && !USER_ALLOWED_STATUSES.includes(body.status as never)) {
             return NextResponse.json({ error: "Forbidden" }, { status: 403 });
         }

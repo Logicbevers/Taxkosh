@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 export async function GET() {
-    const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     const profile = await prisma.gstProfile.findUnique({
-        where: { userId: session.user.id }
+        where: { userId: guard.session.user.id }
     });
 
     return NextResponse.json({ profile });
@@ -22,8 +22,8 @@ const profileSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-    const session = await auth();
-    if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const guard = await requireAuth();
+    if (!guard.ok) return guard.response;
 
     const body = await req.json();
     const parsed = profileSchema.safeParse(body);
@@ -33,14 +33,14 @@ export async function POST(req: NextRequest) {
 
     try {
         const profile = await prisma.gstProfile.upsert({
-            where: { userId: session.user.id },
+            where: { userId: guard.session.user.id },
             update: { gstin, legalName, tradeName, address },
-            create: { userId: session.user.id, gstin, legalName, tradeName, address },
+            create: { userId: guard.session.user.id, gstin, legalName, tradeName, address },
         });
 
         // Update the User model so we know they are a business with a GSTIN
         await prisma.user.update({
-            where: { id: session.user.id },
+            where: { id: guard.session.user.id },
             data: { role: "BUSINESS", gstin }
         });
 
