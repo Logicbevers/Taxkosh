@@ -26,6 +26,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
         include: {
             user: true,
             service: true,
+            catalogNode: true,
             plan: true,
             documents: true,
             platformInvoice: true,
@@ -34,7 +35,9 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
 
     if (!req) redirect("/dashboard/services")
 
-    const requiredDocs = req.service?.requiredDocuments || []
+    // Required docs + name come from whichever catalog item the order points at:
+    // legacy Service for old orders, CatalogNode for ones bought from /services now.
+    const requiredDocs = req.service?.requiredDocuments || req.catalogNode?.requiredDocuments || []
     const uploadedDocsByLabel = req.documents.reduce((acc: Record<string, Document>, doc: Document) => {
         if (doc.label) acc[doc.label] = doc
         return acc
@@ -49,7 +52,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                     </Button>
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
-                            {req.service?.name || "Service Request"}
+                            {req.service?.name || req.catalogNode?.name || "Service Request"}
                             <Badge variant="secondary" className="text-sm font-mono">{req.id.split("-")[0]}</Badge>
                         </h1>
                         <p className="text-muted-foreground mt-1">

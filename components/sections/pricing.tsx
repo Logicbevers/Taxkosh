@@ -3,21 +3,37 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { ArrowRight, Check, Clock } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import { nameToSlug } from "@/lib/catalog";
 
 /**
- * Landing pricing — real, per-service fixed fees pulled from the catalog.
- * This is the platform's single pricing model: one upfront fee per filing,
- * charged at checkout (no subscriptions). Prices shown are GST-inclusive,
- * matching how the invoice engine breaks out CGST/SGST from the total.
+ * Landing pricing — real, per-service fixed fees pulled from the CatalogNode tree
+ * (the same catalog the admin edits and the /services pages read). One upfront fee
+ * per filing, charged at checkout. Prices are GST-inclusive, matching how the
+ * invoice engine breaks CGST/SGST out of the total.
  */
 export async function Pricing() {
-    const services = await prisma.service.findMany({
-        where: { status: "active", price: { gt: 0 } },
+    // Four cheapest buyable services (leaf nodes), each with its sub + category for
+    // the deep link. Only leaves whose sub and category are both active are shown.
+    const leaves = await prisma.catalogNode.findMany({
+        where: { isLeaf: true, status: "active", price: { gt: 0 } },
         orderBy: { price: "asc" },
-        take: 4,
-        include: { subCategory: { include: { category: true } } },
+        include: { parent: { include: { parent: true } } },
     });
+
+    const services = leaves
+        .filter((n) => n.parent?.status === "active" && n.parent.parent?.status === "active")
+        .slice(0, 4)
+        .map((n) => ({
+            id: n.id,
+            name: n.name,
+            slug: n.slug,
+            description: n.description,
+            price: n.price,
+            slaHours: n.slaHours,
+            subCategory: {
+                slug: n.parent!.slug,
+                category: { name: n.parent!.parent!.name, slug: n.parent!.parent!.slug },
+            },
+        }));
 
     if (services.length === 0) return null;
 
@@ -39,7 +55,7 @@ export async function Pricing() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 items-stretch">
                     {services.map((s) => {
-                        const href = `/services/${s.subCategory.category.slug}/${nameToSlug(s.subCategory.name)}/${s.slug}`;
+                        const href = `/services/${s.subCategory.category.slug}/${s.subCategory.slug}/${s.slug}`;
                         return (
                             <Card
                                 key={s.id}
@@ -74,7 +90,7 @@ export async function Pricing() {
                     <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> All prices include 18% GST</span>
                         <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> GST invoice with every payment</span>
-                        <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Pay only when you're ready to file</span>
+                        <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-primary" /> Pay only when you&apos;re ready to file</span>
                     </div>
                     <Button variant="outline" asChild>
                         <Link href="/services">

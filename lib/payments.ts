@@ -42,18 +42,22 @@ export async function findOrCreatePendingRequest(args: {
     userId: string;
     serviceId?: string;
     planId?: string;
+    catalogNodeId?: string;
     amountPaise: number;
     razorpayOrderId: string;
 }) {
-    const { userId, serviceId, planId, amountPaise, razorpayOrderId } = args;
+    const { userId, serviceId, planId, catalogNodeId, amountPaise, razorpayOrderId } = args;
 
     const existing = await prisma.serviceRequest.findFirst({
         // `?? null` is load-bearing: Prisma drops an `undefined` filter entirely,
-        // which would match a pending request for a different service or plan.
+        // which would match a pending request for a different service/node/plan.
+        // Public purchases now key on catalogNodeId; legacy callers still key on
+        // serviceId/planId. Dedup must distinguish them so a retry reuses the right row.
         where: {
             userId,
             serviceId: serviceId ?? null,
             planId: planId ?? null,
+            catalogNodeId: catalogNodeId ?? null,
             status: "PAYMENT_PENDING",
         },
     });
@@ -72,6 +76,7 @@ export async function findOrCreatePendingRequest(args: {
             userId,
             serviceId,
             planId,
+            catalogNodeId,
             status: "PAYMENT_PENDING",
             amount: amountPaise,
             razorpayOrderId,
@@ -97,15 +102,21 @@ export async function finalizePaidServiceRequest(params: {
 
     const reqData = await prisma.serviceRequest.findUnique({
         where: { id: serviceRequestId },
-        include: { user: true, platformInvoice: true, service: true, plan: true },
+        include: { user: true, platformInvoice: true, service: true, plan: true, catalogNode: true },
     });
 
     if (!reqData) return { alreadyProcessed: true };
     // Early exit avoids generating a PDF for an already-processed request.
     if (reqData.status !== "PAYMENT_PENDING") return { alreadyProcessed: true };
 
+    // Requests now come from either the legacy Service or the CatalogNode tree.
+    // Prefer whichever is set so the invoice, notification and receipt name the
+    // actual service instead of the generic fallback.
+    const catalogItem = reqData.service ?? reqData.catalogNode;
+    const serviceName = catalogItem?.name || "Managed Service";
+
     // Use ?? (nullish) so slaHours=0 is preserved.
-    const slaHours = reqData.service?.slaHours ?? 24;
+    const slaHours = catalogItem?.slaHours ?? 24;
     const slaDeadline = new Date(Date.now() + slaHours * 60 * 60 * 1000);
 
     // timestamp + random hex prevents invoice-number collisions.
@@ -126,7 +137,7 @@ export async function finalizePaidServiceRequest(params: {
             userName: reqData.user.name || "Customer",
             userEmail: reqData.user.email,
             userPan: reqData.user.pan || undefined,
-            serviceCategory: reqData.service?.name || "Managed Service",
+            serviceCategory: serviceName,
             subtotal,
             cgst,
             sgst,
@@ -185,7 +196,7 @@ export async function finalizePaidServiceRequest(params: {
             data: {
                 userId: reqData.user.id,
                 title: "Payment successful",
-                message: `We've received your payment for ${reqData.service?.name || "your service"}. Please upload your documents to get started.`,
+                message: `We've received your payment for ${serviceName}. Please upload your documents to get started.`,
                 type: "info",
             },
         });
@@ -197,7 +208,7 @@ export async function finalizePaidServiceRequest(params: {
     // non-critical since the payment is recorded and the invoice is retrievable.
     const receipt = paymentReceiptEmail({
         userName: reqData.user.name || "there",
-        serviceName: reqData.service?.name || "Managed Service",
+        serviceName,
         planName: reqData.plan?.planName ?? null,
         amountRupees: Math.round(amount / 100),
         serviceRequestId: reqData.id,

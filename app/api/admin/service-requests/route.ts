@@ -51,6 +51,8 @@ export async function GET(req: Request) {
                     },
                     service: true,
                     plan: true,
+                    // New orders link the catalog via catalogNode; legacy orders via service.
+                    catalogNode: true,
                 },
                 orderBy: { createdAt: "desc" },
                 skip: (page - 1) * limit,

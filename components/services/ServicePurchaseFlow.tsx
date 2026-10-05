@@ -20,7 +20,8 @@ import { toast } from "sonner";
 import Link from "next/link";
 
 interface ServicePurchaseFlowProps {
-    serviceId: string;
+    /** CatalogNode id of the leaf service being purchased. */
+    catalogNodeId: string;
     serviceName: string;
     price: number;
     requiredDocuments: string[];
@@ -49,7 +50,7 @@ interface DocState {
 }
 
 export function ServicePurchaseFlow({
-    serviceId,
+    catalogNodeId,
     serviceName,
     price,
     requiredDocuments,
@@ -267,7 +268,7 @@ export function ServicePurchaseFlow({
                     <div className="space-y-2">
                         {canProceed ? (
                             <CheckoutButton
-                                serviceId={serviceId}
+                                catalogNodeId={catalogNodeId}
                                 title={serviceName}
                                 amount={price * 100}
                                 autoCheckout={autoCheckout}

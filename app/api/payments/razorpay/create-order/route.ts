@@ -10,7 +10,7 @@ export async function POST(req: Request) {
 
     try {
         const body = await req.json();
-        const { serviceId, planId } = body;
+        const { serviceId, planId, catalogNodeId } = body;
 
         // The ids the client uploaded during this checkout. Untrusted — ownership is
         // enforced in linkDocumentsToRequest, this only shapes the input.
@@ -19,8 +19,17 @@ export async function POST(req: Request) {
             : [];
 
         // Always derive the charge from the server-side price — never trust the client's amount.
+        // Three sources, newest first: catalogNodeId (public /services pages), then the
+        // legacy planId / serviceId still used by the dashboard catalog + plan cards.
         let amountPaise: number;
-        if (planId) {
+        if (catalogNodeId) {
+            const node = await prisma.catalogNode.findUnique({ where: { id: catalogNodeId } });
+            // Only a buyable leaf may be charged — not a category/sub-category node.
+            if (!node || !node.isLeaf || node.status !== "active") {
+                return NextResponse.json({ error: "Invalid service" }, { status: 400 });
+            }
+            amountPaise = Math.round(node.price * 100);
+        } else if (planId) {
             const plan = await prisma.servicePlan.findUnique({ where: { id: planId } });
             if (!plan) {
                 return NextResponse.json({ error: "Invalid plan ID" }, { status: 400 });
@@ -33,7 +42,7 @@ export async function POST(req: Request) {
             }
             amountPaise = Math.round(service.price * 100);
         } else {
-            return NextResponse.json({ error: "A plan or service ID is required" }, { status: 400 });
+            return NextResponse.json({ error: "A service is required" }, { status: 400 });
         }
 
         // No real gateway keys configured:
@@ -51,6 +60,7 @@ export async function POST(req: Request) {
                 userId: guard.session.user.id,
                 serviceId,
                 planId,
+                catalogNodeId,
                 amountPaise,
                 razorpayOrderId: `demo_order_${Date.now()}`,
             });
@@ -94,6 +104,7 @@ export async function POST(req: Request) {
             userId: guard.session.user.id,
             serviceId,
             planId,
+            catalogNodeId,
             amountPaise,
             razorpayOrderId: orderId,
         });

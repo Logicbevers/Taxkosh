@@ -186,7 +186,7 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                     <div>
                         <div className="flex flex-wrap items-center gap-3">
                             <h1 className="font-serif text-3xl text-foreground">
-                                {req.service?.name || "Managed Service"}
+                                {req.service?.name || req.catalogNode?.name || "Managed Service"}
                             </h1>
                             <Badge variant="outline" className="font-mono text-[10px] py-1 px-3 border-primary/20 bg-primary/5 text-primary tracking-widest uppercase">
                                 ID: {req.id.slice(0, 8)}
@@ -211,7 +211,7 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
 
             {/* Missing Documents Alert */}
             {(() => {
-                const required = req.service?.requiredDocuments || [];
+                const required = req.service?.requiredDocuments || req.catalogNode?.requiredDocuments || [];
                 const uploaded = req.documents?.map((d: any) => d.label).filter(Boolean) || [];
                 const missing = required.filter((r: string) => !uploaded.includes(r));
                 
@@ -321,7 +321,7 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                         <CardContent className="p-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {(() => {
-                                    const required = req.service?.requiredDocuments || [];
+                                    const required = req.service?.requiredDocuments || req.catalogNode?.requiredDocuments || [];
                                     const uploadedByLabel = req.documents?.reduce((acc: any, d: any) => {
                                         if (d.label) acc[d.label] = d;
                                         return acc;

@@ -21,6 +21,7 @@ interface ServiceRequest {
     razorpayPaymentId: string | null;
     user: { name: string; email: string };
     service: { name: string } | null;
+    catalogNode: { name: string } | null;
     plan: { planName: string } | null;
 }
 
@@ -87,7 +88,7 @@ export default function ServiceRequestsAdminPage() {
                     r.id,
                     r.user.name,
                     r.user.email,
-                    r.service?.name ?? "—",
+                    r.service?.name ?? r.catalogNode?.name ?? "—",
                     r.plan?.planName ?? "—",
                     r.status,
                     (r.amount / 100).toFixed(2),
@@ -204,7 +205,7 @@ export default function ServiceRequestsAdminPage() {
                                             <div className="font-mono text-[11px] text-muted-foreground">{req.user.email}</div>
                                         </td>
                                         <td className="border-b border-border px-4 py-3.5 text-[13px]">
-                                            {req.service?.name ?? "Unlinked"}
+                                            {req.service?.name ?? req.catalogNode?.name ?? "Unlinked"}
                                             {req.plan?.planName && (
                                                 <span className="ml-2 text-[11px] text-muted-foreground">· {req.plan.planName}</span>
                                             )}

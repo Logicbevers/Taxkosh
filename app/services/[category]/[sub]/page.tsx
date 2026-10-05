@@ -1,8 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRight, Briefcase, ArrowRight, Clock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { getPublicSubCategory } from "@/lib/catalog";
+import { getPublicSubCategory, getPublicDirectService } from "@/lib/catalog";
+import { auth } from "@/lib/auth";
+import { isSmsConfigured } from "@/lib/sms";
+import { ServicePurchaseFlow } from "@/components/services/ServicePurchaseFlow";
 
 export async function generateMetadata({
     params,
@@ -11,21 +15,35 @@ export async function generateMetadata({
 }) {
     const p = await params;
     const data = await getPublicSubCategory(p.category, p.sub);
-    if (!data) return { title: "Not found — TaxKosh" };
-    return {
-        title: `${data.sub.name} — ${data.category.name} — TaxKosh`,
-        description: data.sub.description ?? `Browse ${data.sub.name} services offered by TaxKosh.`,
-    };
+    if (data) {
+        return {
+            title: `${data.sub.name} — ${data.category.name} — TaxKosh`,
+            description: data.sub.description ?? `Browse ${data.sub.name} services offered by TaxKosh.`,
+        };
+    }
+    // Two-segment URL that points at a service leaf directly under the category.
+    const direct = await getPublicDirectService(p.category, p.sub);
+    if (direct) return { title: `${direct.service.name} — TaxKosh` };
+    return { title: "Not found — TaxKosh" };
 }
 
 export default async function SubCategoryPage({
     params,
+    searchParams,
 }: {
     params: Promise<{ category: string; sub: string }>;
+    searchParams: Promise<{ checkout?: string }>;
 }) {
     const p = await params;
     const data = await getPublicSubCategory(p.category, p.sub);
-    if (!data) notFound();
+
+    // Not a sub-category — maybe a service leaf sitting directly under the category.
+    if (!data) {
+        const direct = await getPublicDirectService(p.category, p.sub);
+        if (!direct) notFound();
+        return <DirectServiceView category={direct.category} service={direct.service} searchParams={searchParams} subParam={p.sub} />;
+    }
+
     const { category, sub } = data;
 
     return (
@@ -86,6 +104,64 @@ export default async function SubCategoryPage({
                     ))}
                 </div>
             )}
+        </div>
+    );
+}
+
+/**
+ * Purchase view for a service that lives directly under a category (depth-1 leaf).
+ * Mirrors the [service] detail page's layout so a two-segment URL is a first-class
+ * service page, not a redirect.
+ */
+async function DirectServiceView({
+    category,
+    service,
+    searchParams,
+    subParam,
+}: {
+    category: { name: string; slug: string };
+    service: { id: string; name: string; description: string | null; price: number; slaHours: number; requiredDocuments: string[] };
+    searchParams: Promise<{ checkout?: string }>;
+    subParam: string;
+}) {
+    const search = await searchParams;
+    const session = await auth();
+    const isSignedIn = !!session?.user?.id;
+    const autoCheckout = isSignedIn && search.checkout === "1";
+
+    return (
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+            <nav aria-label="Breadcrumb" className="flex items-center gap-1.5 text-xs text-muted-foreground mb-6 flex-wrap">
+                <Link href="/services" className="hover:text-foreground transition-colors">Services</Link>
+                <ChevronRight className="w-3 h-3" />
+                <Link href={`/services/${category.slug}`} className="hover:text-foreground transition-colors">{category.name}</Link>
+                <ChevronRight className="w-3 h-3" />
+                <span className="text-foreground font-medium">{service.name}</span>
+            </nav>
+
+            <header className="mb-10">
+                <Badge variant="secondary" className="mb-3">
+                    <Clock className="w-3 h-3 mr-1" />
+                    {service.slaHours}h SLA
+                </Badge>
+                <h1 className="font-serif text-4xl sm:text-5xl mb-3">{service.name}</h1>
+                {service.description && (
+                    <p className="text-base sm:text-lg text-muted-foreground max-w-3xl">{service.description}</p>
+                )}
+            </header>
+
+            <div className="max-w-xl">
+                <ServicePurchaseFlow
+                    catalogNodeId={service.id}
+                    serviceName={service.name}
+                    price={service.price}
+                    requiredDocuments={service.requiredDocuments}
+                    isSignedIn={isSignedIn}
+                    returnPath={`/services/${category.slug}/${subParam}`}
+                    autoCheckout={autoCheckout}
+                    requirePhoneVerification={isSmsConfigured()}
+                />
+            </div>
         </div>
     );
 }

@@ -73,7 +73,7 @@ export default async function ServiceDetailPage({
 
             <div className="max-w-xl">
                 <ServicePurchaseFlow
-                    serviceId={service.id}
+                    catalogNodeId={service.id}
                     serviceName={service.name}
                     price={service.price}
                     requiredDocuments={service.requiredDocuments}

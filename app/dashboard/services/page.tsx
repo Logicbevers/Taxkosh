@@ -53,6 +53,7 @@ export default async function ServicesDashboard() {
         where: { userId: session.user.id },
         include: {
             service: true,
+            catalogNode: true,
             plan: true,
             documents: true
         },
@@ -103,7 +104,7 @@ export default async function ServicesDashboard() {
                                     </div>
                                     
                                     <h3 className="font-bold text-lg leading-tight mb-2 group-hover:text-primary transition-colors">
-                                        {req.service?.name || "Managed Service"}
+                                        {req.service?.name || req.catalogNode?.name || "Managed Service"}
                                     </h3>
                                     
                                     <div className="mt-auto pt-4 flex flex-col gap-2">

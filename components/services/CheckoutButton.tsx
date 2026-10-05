@@ -8,8 +8,11 @@ import { Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 interface CheckoutButtonProps {
-    serviceId: string;
+    /** Legacy Service id — still used by the dashboard catalog + plan cards. */
+    serviceId?: string;
     planId?: string;
+    /** CatalogNode id — used by the public /services pages (the current catalog). */
+    catalogNodeId?: string;
     title: string;
     amount: number; // in paise
     autoCheckout?: boolean;
@@ -41,7 +44,7 @@ declare global {
     }
 }
 
-export function CheckoutButton({ serviceId, planId, title, amount, autoCheckout, documentIds }: CheckoutButtonProps) {
+export function CheckoutButton({ serviceId, planId, catalogNodeId, title, amount, autoCheckout, documentIds }: CheckoutButtonProps) {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
     const { data: session } = useSession()
@@ -66,7 +69,7 @@ export function CheckoutButton({ serviceId, planId, title, amount, autoCheckout,
         try {
             const response = await fetch("/api/payments/razorpay/create-order", {
                 method: "POST",
-                body: JSON.stringify({ serviceId, planId, documentIds }),
+                body: JSON.stringify({ serviceId, planId, catalogNodeId, documentIds }),
                 headers: { "Content-Type": "application/json" }
             })
             const orderData = await response.json()

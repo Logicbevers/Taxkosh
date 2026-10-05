@@ -30,9 +30,10 @@ export async function PATCH(
         if (status === ServiceRequestStatus.UNDER_PROCESS || status === ServiceRequestStatus.READY_FOR_FILING || status === ServiceRequestStatus.FILED) {
             const checkReq = await prisma.serviceRequest.findUnique({
                 where: { id },
-                include: { service: true, documents: true }
+                include: { service: true, catalogNode: true, documents: true }
             });
-            const reqDocs = checkReq?.service?.requiredDocuments || [];
+            // Required docs live on whichever catalog item the order points at.
+            const reqDocs = checkReq?.service?.requiredDocuments ?? checkReq?.catalogNode?.requiredDocuments ?? [];
             const uploadedDocs = checkReq?.documents?.map(d => d.label) || [];
             const missing = reqDocs.filter(r => !uploadedDocs.includes(r as string));
             
@@ -92,6 +93,8 @@ export async function GET(
                 },
                 service: true,
                 plan: true,
+                // New orders link the catalog via catalogNode; legacy orders via service.
+                catalogNode: true,
                 internalNotes: {
                     include: { author: true },
                     orderBy: { createdAt: "desc" }
