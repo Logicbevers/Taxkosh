@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { parseDocumentRules } from "@/lib/document-rules";
 import { CatalogTreeClient } from "./CatalogTreeClient";
 
 export const metadata = { title: "Catalog — TaxKosh Admin" };
@@ -9,9 +10,11 @@ export default async function CatalogPage() {
     const session = await auth();
     if (!session?.user?.id || session.user.role !== "ADMIN") redirect("/login");
 
-    const nodes = await prisma.catalogNode.findMany({
+    const rows = await prisma.catalogNode.findMany({
         orderBy: [{ depth: "asc" }, { displayOrder: "asc" }, { name: "asc" }],
     });
+    // Normalise the Json documentRules column into the typed shape the client expects.
+    const nodes = rows.map((n) => ({ ...n, documentRules: parseDocumentRules(n.documentRules) }));
 
     return (
         <div className="space-y-6">

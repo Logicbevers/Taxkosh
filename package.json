@@ -13,7 +13,7 @@
     "test:server": "next dev -p 3002",
     "typecheck": "tsc --noEmit",
     "lint:app": "eslint app lib components proxy.ts",
-    "test:invariants": "dotenv -e .env.test -- node tests/pending-request-reuse.mjs",
+    "test:invariants": "dotenv -e .env.test -- node tests/pending-request-reuse.mjs && dotenv -e .env.test -- node tests/consent-acknowledgement.mjs",
     "test:db:setup": "dotenv -e .env.test -- prisma db push --skip-generate",
     "verify": "npm run typecheck && npm run lint:app && npm run test:invariants"
   },

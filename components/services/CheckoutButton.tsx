@@ -18,6 +18,8 @@ interface CheckoutButtonProps {
     autoCheckout?: boolean;
     /** Documents uploaded before this request existed; attached to it at checkout. */
     documentIds?: string[];
+    /** Consent acknowledgements made in place of uploading optional documents. */
+    acknowledgements?: { label: string }[];
 }
 
 interface RazorpayOptions {
@@ -44,7 +46,7 @@ declare global {
     }
 }
 
-export function CheckoutButton({ serviceId, planId, catalogNodeId, title, amount, autoCheckout, documentIds }: CheckoutButtonProps) {
+export function CheckoutButton({ serviceId, planId, catalogNodeId, title, amount, autoCheckout, documentIds, acknowledgements }: CheckoutButtonProps) {
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
     const { data: session } = useSession()
@@ -69,7 +71,7 @@ export function CheckoutButton({ serviceId, planId, catalogNodeId, title, amount
         try {
             const response = await fetch("/api/payments/razorpay/create-order", {
                 method: "POST",
-                body: JSON.stringify({ serviceId, planId, catalogNodeId, documentIds }),
+                body: JSON.stringify({ serviceId, planId, catalogNodeId, documentIds, acknowledgements }),
                 headers: { "Content-Type": "application/json" }
             })
             const orderData = await response.json()

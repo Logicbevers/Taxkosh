@@ -1,4 +1,9 @@
 "use client"
+/* eslint-disable @typescript-eslint/no-explicit-any --
+   This admin detail view predates proper typing and holds the request as `any`
+   throughout (useState<any> + inline `any` reducers). Typing the full admin
+   service-request response is a worthwhile but separate cleanup; until then this
+   keeps the file lintable without hiding real issues in newer, typed files. */
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
@@ -213,7 +218,8 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
             {(() => {
                 const required = req.service?.requiredDocuments || req.catalogNode?.requiredDocuments || [];
                 const uploaded = req.documents?.map((d: any) => d.label).filter(Boolean) || [];
-                const missing = required.filter((r: string) => !uploaded.includes(r));
+                const acknowledged = (req.acknowledgements || []).map((a: any) => a.documentLabel);
+                const missing = required.filter((r: string) => !uploaded.includes(r) && !acknowledged.includes(r));
                 
                 if (missing.length > 0 && req.status !== "COMPLETED" && req.status !== "FILED") {
                     return (
@@ -328,17 +334,23 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                                     }, {}) || {};
                                     
                                     const extras = req.documents?.filter((d: any) => !d.label || !required.includes(d.label)) || [];
-                                    
+                                    const ackByLabel = (req.acknowledgements || []).reduce((acc: any, a: any) => {
+                                        acc[a.documentLabel] = a;
+                                        return acc;
+                                    }, {});
+
                                     return (
                                         <>
                                             {required.map((reqDoc: string) => {
                                                 const doc = uploadedByLabel[reqDoc];
+                                                const ack = !doc ? ackByLabel[reqDoc] : undefined;
+                                                const satisfied = !!doc || !!ack;
                                                 return (
-                                                    <div key={reqDoc} className={`group relative border rounded-2xl p-4 transition-all duration-300 ${doc ? 'border-primary/20 bg-primary/[0.02]' : 'border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20'}`}>
+                                                    <div key={reqDoc} className={`group relative border rounded-2xl p-4 transition-all duration-300 ${satisfied ? 'border-primary/20 bg-primary/[0.02]' : 'border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20'}`}>
                                                         <div className="flex items-start justify-between">
                                                             <div className="flex items-center gap-4">
-                                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner transition-transform group-hover:scale-105 ${doc ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-100 dark:border-emerald-900/50' : 'bg-amber-50 dark:bg-amber-950/30 text-amber-500 border-amber-100 dark:border-amber-900/50'}`}>
-                                                                    {doc ? <CheckCircle className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6 opacity-60" />}
+                                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border shadow-inner transition-transform group-hover:scale-105 ${satisfied ? 'bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 border-emerald-100 dark:border-emerald-900/50' : 'bg-amber-50 dark:bg-amber-950/30 text-amber-500 border-amber-100 dark:border-amber-900/50'}`}>
+                                                                    {satisfied ? <CheckCircle className="w-6 h-6" /> : <AlertTriangle className="w-6 h-6 opacity-60" />}
                                                                 </div>
                                                                 <div className="flex flex-col">
                                                                     <p className="text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate max-w-[140px]">{reqDoc}</p>
@@ -348,6 +360,10 @@ export default function ServiceOperationDetail({ params }: { params: Promise<{ i
                                                                             <span className="h-0.5 w-0.5 rounded-full bg-slate-300" />
                                                                             <span className="text-[9px] font-black uppercase text-muted-foreground tracking-tighter truncate max-w-[100px]">{doc.fileName}</span>
                                                                         </div>
+                                                                    ) : ack ? (
+                                                                        <span className="text-[9px] font-black uppercase text-emerald-600/80 tracking-widest mt-1" title={ack.consentTextSnapshot}>
+                                                                            Consent acknowledged · {new Date(ack.acknowledgedAt).toLocaleDateString()}
+                                                                        </span>
                                                                     ) : (
                                                                         <span className="text-[9px] font-black uppercase text-amber-500/80 tracking-widest mt-1">Pending Submission</span>
                                                                     )}

@@ -30,12 +30,14 @@ export async function PATCH(
         if (status === ServiceRequestStatus.UNDER_PROCESS || status === ServiceRequestStatus.READY_FOR_FILING || status === ServiceRequestStatus.FILED) {
             const checkReq = await prisma.serviceRequest.findUnique({
                 where: { id },
-                include: { service: true, catalogNode: true, documents: true }
+                include: { service: true, catalogNode: true, documents: true, acknowledgements: true }
             });
             // Required docs live on whichever catalog item the order points at.
             const reqDocs = checkReq?.service?.requiredDocuments ?? checkReq?.catalogNode?.requiredDocuments ?? [];
             const uploadedDocs = checkReq?.documents?.map(d => d.label) || [];
-            const missing = reqDocs.filter(r => !uploadedDocs.includes(r as string));
+            const acknowledgedDocs = checkReq?.acknowledgements?.map(a => a.documentLabel) || [];
+            // A requirement is met by an upload OR a consent acknowledgement.
+            const missing = reqDocs.filter(r => !uploadedDocs.includes(r as string) && !acknowledgedDocs.includes(r as string));
             
             if (missing.length > 0) {
                 return NextResponse.json({ error: "Cannot proceed. Awaiting mandatory artifacts: " + missing.join(", ") }, { status: 400 });
@@ -102,7 +104,8 @@ export async function GET(
                 // Oldest first: the detail view keys documents by label, last one wins,
                 // so a re-upload of the same label must land after the file it replaces
                 // rather than depending on unordered rows.
-                documents: { orderBy: { uploadedAt: "asc" } }
+                documents: { orderBy: { uploadedAt: "asc" } },
+                acknowledgements: true
             }
         });
 

@@ -29,6 +29,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
             catalogNode: true,
             plan: true,
             documents: true,
+            acknowledgements: true,
             platformInvoice: true,
         }
     })
@@ -38,6 +39,8 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
     // Required docs + name come from whichever catalog item the order points at:
     // legacy Service for old orders, CatalogNode for ones bought from /services now.
     const requiredDocs = req.service?.requiredDocuments || req.catalogNode?.requiredDocuments || []
+    // Labels the customer satisfied by acknowledging a consent instead of uploading.
+    const acknowledgedLabels = new Set(req.acknowledgements.map((a) => a.documentLabel))
     const uploadedDocsByLabel = req.documents.reduce((acc: Record<string, Document>, doc: Document) => {
         if (doc.label) acc[doc.label] = doc
         return acc
@@ -117,21 +120,23 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                         <CardContent className="space-y-4">
                             {requiredDocs.map((docName: string) => {
                                 const uploadedDoc = uploadedDocsByLabel[docName];
+                                const acknowledged = !uploadedDoc && acknowledgedLabels.has(docName);
+                                const satisfied = !!uploadedDoc || acknowledged;
                                 return (
-                                    <div key={docName} className={`p-4 rounded-xl border-2 transition-all ${uploadedDoc ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'}`}>
+                                    <div key={docName} className={`p-4 rounded-xl border-2 transition-all ${satisfied ? 'bg-emerald-50 dark:bg-emerald-950/30 border-emerald-100 dark:border-emerald-900/50' : 'bg-slate-50 dark:bg-slate-800/50 border-slate-100 dark:border-slate-700'}`}>
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2 rounded-lg ${uploadedDoc ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300'}`}>
-                                                    {uploadedDoc ? <CheckCircle2 className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
+                                                <div className={`p-2 rounded-lg ${satisfied ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300'}`}>
+                                                    {satisfied ? <CheckCircle2 className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
                                                 </div>
                                                 <div>
                                                     <p className="font-bold text-sm uppercase tracking-tight text-slate-900 dark:text-slate-100">{docName}</p>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                                                        {uploadedDoc ? `Attached: ${uploadedDoc.fileName}` : "Awaiting document upload"}
+                                                        {uploadedDoc ? `Attached: ${uploadedDoc.fileName}` : acknowledged ? "Consent acknowledged — upload not required" : "Awaiting document upload"}
                                                     </p>
                                                 </div>
                                             </div>
-                                            {!uploadedDoc && (req.status === ServiceRequestStatus.CREATED || req.status === ServiceRequestStatus.PAID || req.status === ServiceRequestStatus.DOCUMENTS_PENDING || req.status === ServiceRequestStatus.CLARIFICATION_REQUIRED) ? (
+                                            {!satisfied && (req.status === ServiceRequestStatus.CREATED || req.status === ServiceRequestStatus.PAID || req.status === ServiceRequestStatus.DOCUMENTS_PENDING || req.status === ServiceRequestStatus.CLARIFICATION_REQUIRED) ? (
                                                 <div className="relative">
                                                     <ServiceDocumentUploader serviceRequestId={req.id} label={docName} />
                                                 </div>
@@ -175,7 +180,7 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                     </Card>
 
                     {(() => {
-                        const missingDocsList = requiredDocs.filter((d: string) => !uploadedDocsByLabel[d]);
+                        const missingDocsList = requiredDocs.filter((d: string) => !uploadedDocsByLabel[d] && !acknowledgedLabels.has(d));
                         const isLocked = missingDocsList.length > 0;
                         
                         return (req.status === ServiceRequestStatus.CREATED || req.status === ServiceRequestStatus.PAID || req.status === ServiceRequestStatus.DOCUMENTS_PENDING || req.status === ServiceRequestStatus.CLARIFICATION_REQUIRED) && (
@@ -186,12 +191,13 @@ export default async function ServiceDetailPage({ params }: { params: Promise<{ 
                                 // Server-side block to prevent bypass
                                 const checkReq = await prisma.serviceRequest.findUnique({
                                     where: { id: req.id },
-                                    include: { documents: true, service: true }
+                                    include: { documents: true, service: true, catalogNode: true, acknowledgements: true }
                                 });
-                                
-                                const currentRequired = checkReq?.service?.requiredDocuments || [];
+
+                                const currentRequired = checkReq?.service?.requiredDocuments ?? checkReq?.catalogNode?.requiredDocuments ?? [];
                                 const currentUploaded = checkReq?.documents?.map(d => d.label) || [];
-                                const stillMissing = currentRequired.filter(r => !currentUploaded.includes(r as string));
+                                const currentAcknowledged = checkReq?.acknowledgements?.map(a => a.documentLabel) || [];
+                                const stillMissing = currentRequired.filter(r => !currentUploaded.includes(r as string) && !currentAcknowledged.includes(r as string));
                                 
                                 if (stillMissing.length > 0) {
                                     throw new Error("Cannot submit. Missing documents: " + stillMissing.join(", "));

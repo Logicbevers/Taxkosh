@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { razorpay, isRazorpayConfigured, isDemoCheckoutAllowed } from "@/lib/razorpay";
-import { findOrCreatePendingRequest, linkDocumentsToRequest } from "@/lib/payments";
+import { findOrCreatePendingRequest, linkDocumentsToRequest, recordAcknowledgements } from "@/lib/payments";
+import { getClientIp } from "@/lib/api-auth";
 
 export async function POST(req: Request) {
     const guard = await requireAuth();
@@ -17,6 +18,15 @@ export async function POST(req: Request) {
         const documentIds: string[] = Array.isArray(body.documentIds)
             ? body.documentIds.filter((d: unknown): d is string => typeof d === "string")
             : [];
+
+        // Consent labels the customer acknowledged instead of uploading. Untrusted —
+        // recordAcknowledgements validates each against the node's own documentRules.
+        const ackLabels: string[] = Array.isArray(body.acknowledgements)
+            ? body.acknowledgements
+                  .map((a: unknown) => (a && typeof a === "object" ? (a as { label?: unknown }).label : undefined))
+                  .filter((l: unknown): l is string => typeof l === "string")
+            : [];
+        const clientIp = getClientIp(req);
 
         // Always derive the charge from the server-side price — never trust the client's amount.
         // Three sources, newest first: catalogNodeId (public /services pages), then the
@@ -65,6 +75,13 @@ export async function POST(req: Request) {
                 razorpayOrderId: `demo_order_${Date.now()}`,
             });
             await linkDocumentsToRequest(guard.session.user.id, serviceReq.id, documentIds);
+            await recordAcknowledgements({
+                serviceRequestId: serviceReq.id,
+                userId: guard.session.user.id,
+                catalogNodeId,
+                labels: ackLabels,
+                ipAddress: clientIp,
+            });
             return NextResponse.json({
                 success: true,
                 demoMode: true,
@@ -110,6 +127,13 @@ export async function POST(req: Request) {
         });
 
         await linkDocumentsToRequest(guard.session.user.id, serviceReq.id, documentIds);
+        await recordAcknowledgements({
+            serviceRequestId: serviceReq.id,
+            userId: guard.session.user.id,
+            catalogNodeId,
+            labels: ackLabels,
+            ipAddress: clientIp,
+        });
 
         return NextResponse.json({
             success: true,

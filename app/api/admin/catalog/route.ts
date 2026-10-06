@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { syncNodeToLegacy } from "@/lib/catalog-sync";
+import { documentRulesSchema } from "@/lib/document-rules";
 
 const createNodeSchema = z.object({
     name: z.string().min(1).max(200),
@@ -13,6 +14,8 @@ const createNodeSchema = z.object({
     price: z.number().min(0).default(0),
     description: z.string().max(2000).optional(),
     requiredDocuments: z.array(z.string()).default([]),
+    // Per-document consent metadata; aligned with requiredDocuments by label.
+    documentRules: documentRulesSchema.optional().default([]),
     slaHours: z.number().int().min(1).max(720).default(24),
     status: z.enum(["active", "inactive"]).default("active"),
 });
@@ -47,7 +50,7 @@ export async function POST(req: Request) {
             );
         }
 
-        const { name, slug, parentId, displayOrder, isLeaf, price, description, requiredDocuments, slaHours, status } =
+        const { name, slug, parentId, displayOrder, isLeaf, price, description, requiredDocuments, documentRules, slaHours, status } =
             parsed.data;
 
         // Determine depth from parent and validate parent is not a leaf
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
         }
 
         const node = await prisma.catalogNode.create({
-            data: { name, slug, parentId: parentId ?? null, depth, displayOrder, isLeaf, price, description, requiredDocuments, slaHours, status },
+            data: { name, slug, parentId: parentId ?? null, depth, displayOrder, isLeaf, price, description, requiredDocuments, documentRules, slaHours, status },
         });
 
         // Mirror into the legacy model the public site + checkout read.

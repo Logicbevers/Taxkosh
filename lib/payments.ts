@@ -4,6 +4,7 @@ import { generatePdfInvoice } from "@/lib/invoice";
 import { uploadToS3 } from "@/lib/s3";
 import { sendMail } from "@/lib/mailer";
 import { paymentReceiptEmail } from "@/lib/email-templates";
+import { parseDocumentRules, isConsentEligible } from "@/lib/document-rules";
 
 /**
  * Documents uploaded during the pre-payment purchase flow are created before the
@@ -28,6 +29,49 @@ export async function linkDocumentsToRequest(
         where: { id: { in: documentIds }, userId, serviceRequestId: null, taxReturnId: null },
         data: { serviceRequestId },
     });
+    return count;
+}
+
+/**
+ * Record consent acknowledgements the customer made in place of uploading optional
+ * documents. The consent text is snapshotted from the node's own documentRules
+ * (never from the client), and only labels that are genuinely consent-eligible
+ * (optional + have consent content) are accepted. Idempotent per (request,label)
+ * so a checkout retry doesn't duplicate rows.
+ */
+export async function recordAcknowledgements(args: {
+    serviceRequestId: string;
+    userId: string;
+    catalogNodeId?: string | null;
+    labels: string[];
+    ipAddress?: string | null;
+}): Promise<number> {
+    const { serviceRequestId, userId, catalogNodeId, labels, ipAddress } = args;
+    if (!catalogNodeId || labels.length === 0) return 0;
+
+    const node = await prisma.catalogNode.findUnique({
+        where: { id: catalogNodeId },
+        select: { documentRules: true },
+    });
+    const rules = parseDocumentRules(node?.documentRules);
+
+    let count = 0;
+    for (const label of labels) {
+        const rule = rules.find((r) => r.label === label);
+        if (!isConsentEligible(rule)) continue; // reject non-optional / unknown labels
+        await prisma.documentAcknowledgement.upsert({
+            where: { serviceRequestId_documentLabel: { serviceRequestId, documentLabel: label } },
+            update: {},
+            create: {
+                serviceRequestId,
+                userId,
+                documentLabel: label,
+                consentTextSnapshot: rule!.consentText ?? "",
+                ipAddress: ipAddress ?? undefined,
+            },
+        });
+        count++;
+    }
     return count;
 }
 

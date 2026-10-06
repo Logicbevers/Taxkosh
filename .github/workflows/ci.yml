@@ -168,6 +168,8 @@ jobs:
         run: node prisma/seed.mjs
       - name: Checkout retry must not strand documents
         run: node tests/pending-request-reuse.mjs
+      - name: Consent acknowledgement rules + gate
+        run: node tests/consent-acknowledgement.mjs
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Quarantined specs — NOT run above because they fail today (21 of 26).

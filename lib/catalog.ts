@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { prisma } from "@/lib/prisma";
+import { parseDocumentRules, type DocumentRule } from "@/lib/document-rules";
 
 /**
  * Server-side catalog fetchers for the PUBLIC /services/* pages and navbar.
@@ -26,6 +27,7 @@ type ServiceShape = {
     price: number;
     slaHours: number;
     requiredDocuments: string[];
+    documentRules: DocumentRule[];
 };
 
 // A sub-category is only "public" when it has at least one active leaf (a real,
@@ -37,11 +39,12 @@ const activeLeafChildren = {
 
 function toService(n: {
     id: string; name: string; slug: string; description: string | null;
-    price: number; slaHours: number; requiredDocuments: string[];
+    price: number; slaHours: number; requiredDocuments: string[]; documentRules?: unknown;
 }): ServiceShape {
     return {
         id: n.id, name: n.name, slug: n.slug, description: n.description,
         price: n.price, slaHours: n.slaHours, requiredDocuments: n.requiredDocuments,
+        documentRules: parseDocumentRules(n.documentRules),
     };
 }
 
@@ -190,6 +193,7 @@ export const getPublicService = cache(async (
         price: service.price,
         slaHours: service.slaHours,
         requiredDocuments: service.requiredDocuments,
+        documentRules: parseDocumentRules(service.documentRules),
         subCategory: {
             id: sub.id,
             name: sub.name,

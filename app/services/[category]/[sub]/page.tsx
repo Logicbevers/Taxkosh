@@ -4,6 +4,7 @@ import { ChevronRight, Briefcase, ArrowRight, Clock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { getPublicSubCategory, getPublicDirectService } from "@/lib/catalog";
+import type { DocumentRule } from "@/lib/document-rules";
 import { auth } from "@/lib/auth";
 import { isSmsConfigured } from "@/lib/sms";
 import { ServicePurchaseFlow } from "@/components/services/ServicePurchaseFlow";
@@ -120,7 +121,7 @@ async function DirectServiceView({
     subParam,
 }: {
     category: { name: string; slug: string };
-    service: { id: string; name: string; description: string | null; price: number; slaHours: number; requiredDocuments: string[] };
+    service: { id: string; name: string; description: string | null; price: number; slaHours: number; requiredDocuments: string[]; documentRules: DocumentRule[] };
     searchParams: Promise<{ checkout?: string }>;
     subParam: string;
 }) {
@@ -156,6 +157,7 @@ async function DirectServiceView({
                     serviceName={service.name}
                     price={service.price}
                     requiredDocuments={service.requiredDocuments}
+                    documentRules={service.documentRules}
                     isSignedIn={isSignedIn}
                     returnPath={`/services/${category.slug}/${subParam}`}
                     autoCheckout={autoCheckout}

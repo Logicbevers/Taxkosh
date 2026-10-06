@@ -28,6 +28,7 @@ model User {
   lastLogin        DateTime?
   phoneVerified    DateTime?
   accounts         Account[]
+  acknowledgements DocumentAcknowledgement[]
   auditLogs        AuditLog[]
   documents        Document[]
   fileAccessLogs   FileAccessLog[]
@@ -233,6 +234,7 @@ model ServiceRequest {
   documents                 Document[]
   internalNotes             InternalNote[]
   platformInvoice           PlatformInvoice?
+  acknowledgements          DocumentAcknowledgement[]
   user                      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   service                   Service?             @relation(fields: [serviceId], references: [id])
   plan                      ServicePlan?         @relation(fields: [planId], references: [id])
@@ -243,6 +245,26 @@ model ServiceRequest {
   @@index([status])
   @@index([createdAt])
   @@map("service_requests")
+}
+
+// Record of a customer acknowledging a consent in place of uploading a required
+// document (e.g. "if I don't share this, you may use the details my bank reports").
+// consentTextSnapshot captures exactly what was agreed to, so a later edit to the
+// service's consent text never rewrites history.
+model DocumentAcknowledgement {
+  id                  String         @id @default(cuid())
+  serviceRequestId    String
+  userId              String
+  documentLabel       String
+  consentTextSnapshot String
+  acknowledgedAt      DateTime       @default(now())
+  ipAddress           String?
+  serviceRequest      ServiceRequest @relation(fields: [serviceRequestId], references: [id], onDelete: Cascade)
+  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([serviceRequestId, documentLabel])
+  @@index([serviceRequestId])
+  @@map("document_acknowledgements")
 }
 
 model InternalNote {
@@ -352,6 +374,10 @@ model CatalogNode {
   price             Float          @default(0)
   description       String?
   requiredDocuments String[]
+  // Per-document metadata aligned with requiredDocuments by label:
+  // Array<{ label, optional, consentText?, consentPdfS3Key? }>. `optional` means the
+  // customer may acknowledge a consent instead of uploading the file.
+  documentRules     Json?
   slaHours          Int            @default(24)
   status            String         @default("active")
   createdAt         DateTime       @default(now())
@@ -401,6 +427,8 @@ model Service {
   subCategoryId     String
   description       String?
   requiredDocuments String[]
+  // Mirrors CatalogNode.documentRules for the legacy readers (see lib/catalog-sync).
+  documentRules     Json?
   price             Float       @default(0)
   slaHours          Int         @default(24)
   status            String      @default("active")

@@ -4,6 +4,13 @@ import { useState, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogFooter,
+} from "@/components/ui/dialog";
 import { PhoneOTPDialog } from "@/components/phone-otp-dialog";
 import { CheckoutButton } from "@/components/services/CheckoutButton";
 import {
@@ -15,9 +22,12 @@ import {
     FileText,
     AlertCircle,
     Lock,
+    FileSignature,
+    ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import Link from "next/link";
+import { type DocumentRule, isConsentEligible, ruleForLabel } from "@/lib/document-rules";
 
 interface ServicePurchaseFlowProps {
     /** CatalogNode id of the leaf service being purchased. */
@@ -25,6 +35,8 @@ interface ServicePurchaseFlowProps {
     serviceName: string;
     price: number;
     requiredDocuments: string[];
+    /** Per-document consent metadata (optional + acceptance text/PDF). */
+    documentRules?: DocumentRule[];
     isSignedIn: boolean;
     returnPath: string;
     autoCheckout?: boolean;
@@ -47,6 +59,12 @@ interface DocState {
      * see linkDocumentsToRequest.
      */
     documentId?: string;
+    // Consent metadata + state. A consent-eligible doc may be satisfied by either
+    // uploading the file OR acknowledging the consent.
+    consentEligible: boolean;
+    consentText?: string;
+    consentPdfS3Key?: string;
+    acknowledged: boolean;
 }
 
 export function ServicePurchaseFlow({
@@ -54,17 +72,31 @@ export function ServicePurchaseFlow({
     serviceName,
     price,
     requiredDocuments,
+    documentRules = [],
     isSignedIn,
     returnPath,
     autoCheckout,
     requirePhoneVerification = false,
 }: ServicePurchaseFlowProps) {
     const [docs, setDocs] = useState<DocState[]>(
-        requiredDocuments.map((label) => ({ label, uploading: false, uploaded: false }))
+        requiredDocuments.map((label) => {
+            const rule = ruleForLabel(documentRules, label);
+            return {
+                label,
+                uploading: false,
+                uploaded: false,
+                acknowledged: false,
+                consentEligible: isConsentEligible(rule),
+                consentText: rule?.consentText,
+                consentPdfS3Key: rule?.consentPdfS3Key,
+            };
+        })
     );
     const [phoneVerified, setPhoneVerified] = useState(false);
     const [phoneLoading, setPhoneLoading] = useState(isSignedIn && requirePhoneVerification);
     const [otpOpen, setOtpOpen] = useState(false);
+    // Index of the doc whose consent dialog is open, or null.
+    const [consentFor, setConsentFor] = useState<number | null>(null);
     const fileRefs = useRef<(HTMLInputElement | null)[]>([]);
 
     // Fetch phone verification status on mount (only when the step is active)
@@ -77,8 +109,15 @@ export function ServicePurchaseFlow({
             .finally(() => setPhoneLoading(false));
     }, [isSignedIn, requirePhoneVerification]);
 
-    const allDocsUploaded = docs.every((d) => d.uploaded);
-    const canProceed = allDocsUploaded && (phoneVerified || !requirePhoneVerification);
+    // A doc is satisfied by an upload OR (for consent-eligible docs) an acknowledgement.
+    const allDocsSatisfied = docs.every((d) => d.uploaded || d.acknowledged);
+    const canProceed = allDocsSatisfied && (phoneVerified || !requirePhoneVerification);
+
+    function acknowledgeDoc(index: number) {
+        setDocs((prev) => prev.map((d, i) => (i === index ? { ...d, acknowledged: true } : d)));
+        setConsentFor(null);
+        toast.success("Consent acknowledged");
+    }
 
     async function handleFileChange(index: number, file: File | null) {
         if (!file) return;
@@ -157,13 +196,13 @@ export function ServicePurchaseFlow({
                 <>
                     {/* Step 1 — Documents */}
                     {requiredDocuments.length > 0 && (
-                        <Card className={allDocsUploaded ? "border-emerald-500/50" : "border-border"}>
+                        <Card className={allDocsSatisfied ? "border-emerald-500/50" : "border-border"}>
                             <CardHeader className="pb-3 flex flex-row items-center justify-between">
                                 <h3 className="text-sm font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-2">
                                     <FileText className="w-4 h-4" />
                                     Step 1 — Upload documents
                                 </h3>
-                                {allDocsUploaded && (
+                                {allDocsSatisfied && (
                                     <Badge variant="secondary" className="text-emerald-600 bg-emerald-50 dark:bg-emerald-950">
                                         <Check className="w-3 h-3 mr-1" /> Complete
                                     </Badge>
@@ -173,54 +212,72 @@ export function ServicePurchaseFlow({
                                 {docs.map((doc, i) => (
                                     <div
                                         key={doc.label}
-                                        className="flex items-center gap-3 p-3 rounded-lg border bg-muted/30"
+                                        className="flex flex-col gap-2 p-3 rounded-lg border bg-muted/30"
                                     >
-                                        <div className="shrink-0">
-                                            {doc.uploaded ? (
-                                                <Check className="w-4 h-4 text-emerald-500" />
-                                            ) : doc.uploading ? (
-                                                <Loader2 className="w-4 h-4 animate-spin text-primary" />
-                                            ) : (
-                                                <AlertCircle className="w-4 h-4 text-amber-500" />
-                                            )}
+                                        <div className="flex items-center gap-3">
+                                            <div className="shrink-0">
+                                                {doc.uploaded || doc.acknowledged ? (
+                                                    <Check className="w-4 h-4 text-emerald-500" />
+                                                ) : doc.uploading ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                                                ) : (
+                                                    <AlertCircle className="w-4 h-4 text-amber-500" />
+                                                )}
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-medium truncate">{doc.label}</p>
+                                                {doc.uploaded && doc.fileName ? (
+                                                    <p className="text-xs text-muted-foreground truncate">{doc.fileName}</p>
+                                                ) : doc.acknowledged ? (
+                                                    <p className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                                                        <FileSignature className="w-3 h-3" /> Consent acknowledged
+                                                    </p>
+                                                ) : null}
+                                            </div>
+                                            <div className="shrink-0">
+                                                {doc.uploaded ? (
+                                                    <button
+                                                        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                                                        onClick={() => fileRefs.current[i]?.click()}
+                                                    >
+                                                        Replace
+                                                    </button>
+                                                ) : (
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline"
+                                                        disabled={doc.uploading}
+                                                        onClick={() => fileRefs.current[i]?.click()}
+                                                        className="h-7 text-xs"
+                                                    >
+                                                        {doc.uploading ? (
+                                                            <Loader2 className="w-3 h-3 animate-spin" />
+                                                        ) : (
+                                                            <><Upload className="w-3 h-3 mr-1" />Upload</>
+                                                        )}
+                                                    </Button>
+                                                )}
+                                            </div>
+                                            <input
+                                                ref={(el) => { fileRefs.current[i] = el; }}
+                                                type="file"
+                                                className="hidden"
+                                                accept=".pdf,.jpg,.jpeg,.png,.webp"
+                                                onChange={(e) => handleFileChange(i, e.target.files?.[0] ?? null)}
+                                            />
                                         </div>
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium truncate">{doc.label}</p>
-                                            {doc.fileName && (
-                                                <p className="text-xs text-muted-foreground truncate">{doc.fileName}</p>
-                                            )}
-                                        </div>
-                                        <div className="shrink-0">
-                                            {doc.uploaded ? (
-                                                <button
-                                                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                                                    onClick={() => fileRefs.current[i]?.click()}
-                                                >
-                                                    Replace
-                                                </button>
-                                            ) : (
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline"
-                                                    disabled={doc.uploading}
-                                                    onClick={() => fileRefs.current[i]?.click()}
-                                                    className="h-7 text-xs"
-                                                >
-                                                    {doc.uploading ? (
-                                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                                    ) : (
-                                                        <><Upload className="w-3 h-3 mr-1" />Upload</>
-                                                    )}
-                                                </Button>
-                                            )}
-                                        </div>
-                                        <input
-                                            ref={(el) => { fileRefs.current[i] = el; }}
-                                            type="file"
-                                            className="hidden"
-                                            accept=".pdf,.jpg,.jpeg,.png,.webp"
-                                            onChange={(e) => handleFileChange(i, e.target.files?.[0] ?? null)}
-                                        />
+
+                                        {/* Consent alternative — only for consent-eligible docs not yet satisfied by upload */}
+                                        {doc.consentEligible && !doc.uploaded && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setConsentFor(i)}
+                                                className="self-start text-xs text-primary hover:underline flex items-center gap-1 pl-7"
+                                            >
+                                                <FileSignature className="w-3 h-3" />
+                                                {doc.acknowledged ? "View / change consent" : "Don't have this? Acknowledge instead"}
+                                            </button>
+                                        )}
                                     </div>
                                 ))}
                             </CardContent>
@@ -273,6 +330,7 @@ export function ServicePurchaseFlow({
                                 amount={price * 100}
                                 autoCheckout={autoCheckout}
                                 documentIds={docs.map((d) => d.documentId).filter((id): id is string => Boolean(id))}
+                                acknowledgements={docs.filter((d) => d.acknowledged && !d.uploaded).map((d) => ({ label: d.label }))}
                             />
                         ) : (
                             <Button
@@ -280,8 +338,8 @@ export function ServicePurchaseFlow({
                                 disabled
                             >
                                 <Lock className="w-4 h-4 mr-2" />
-                                {!allDocsUploaded && requiredDocuments.length > 0
-                                    ? "Upload all documents to continue"
+                                {!allDocsSatisfied && requiredDocuments.length > 0
+                                    ? "Upload or acknowledge all documents to continue"
                                     : "Verify phone to continue"}
                             </Button>
                         )}
@@ -299,6 +357,45 @@ export function ServicePurchaseFlow({
                 onOpenChange={setOtpOpen}
                 onVerified={() => setPhoneVerified(true)}
             />
+
+            {/* Consent / acknowledgement dialog */}
+            <Dialog open={consentFor !== null} onOpenChange={(o) => !o && setConsentFor(null)}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-base">
+                            <FileSignature className="w-4 h-4 text-primary" />
+                            {consentFor !== null ? docs[consentFor]?.label : ""} — consent
+                        </DialogTitle>
+                    </DialogHeader>
+                    {consentFor !== null && (
+                        <div className="space-y-4">
+                            <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                {docs[consentFor].consentText || "Acknowledge that you cannot share this document."}
+                            </p>
+                            {docs[consentFor].consentPdfS3Key && (
+                                <a
+                                    href={`/api/catalog/consent?key=${encodeURIComponent(docs[consentFor].consentPdfS3Key!)}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-primary hover:underline inline-flex items-center gap-1"
+                                >
+                                    <ExternalLink className="w-3 h-3" /> Read the full terms (PDF)
+                                </a>
+                            )}
+                            <p className="text-[11px] text-muted-foreground">
+                                By acknowledging, you agree to the above in place of uploading this document. This is
+                                recorded with your request.
+                            </p>
+                        </div>
+                    )}
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button variant="outline" onClick={() => setConsentFor(null)}>Cancel</Button>
+                        <Button onClick={() => consentFor !== null && acknowledgeDoc(consentFor)}>
+                            I acknowledge
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

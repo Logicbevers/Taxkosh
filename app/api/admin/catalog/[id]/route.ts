@@ -3,6 +3,7 @@ import { requireAdmin } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { syncNodeToLegacy, deleteLegacyForNode } from "@/lib/catalog-sync";
+import { documentRulesSchema } from "@/lib/document-rules";
 
 const patchSchema = z.object({
     name: z.string().min(1).max(200).optional(),
@@ -12,6 +13,7 @@ const patchSchema = z.object({
     price: z.number().min(0).optional(),
     description: z.string().max(2000).optional(),
     requiredDocuments: z.array(z.string()).optional(),
+    documentRules: documentRulesSchema.optional(),
     slaHours: z.number().int().min(1).max(720).optional(),
     status: z.enum(["active", "inactive"]).optional(),
 });

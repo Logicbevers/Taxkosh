@@ -38,6 +38,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import type { DocumentRule } from "@/lib/document-rules";
 
 interface CatalogNode {
     id: string;
@@ -50,6 +51,7 @@ interface CatalogNode {
     price: number;
     description: string | null;
     requiredDocuments: string[];
+    documentRules?: DocumentRule[] | null;
     slaHours: number;
     status: string;
 }
@@ -61,7 +63,8 @@ interface NodeFormState {
     isLeaf: boolean;
     price: number;
     description: string;
-    requiredDocuments: string[];
+    // Source of truth for the document editor; requiredDocuments is derived on save.
+    documentRules: DocumentRule[];
     slaHours: number;
     status: "active" | "inactive";
 }
@@ -73,7 +76,7 @@ const defaultForm = (): NodeFormState => ({
     isLeaf: false,
     price: 0,
     description: "",
-    requiredDocuments: [],
+    documentRules: [],
     slaHours: 24,
     status: "active",
 });
@@ -225,16 +228,44 @@ interface NodeDialogProps {
 
 function NodeDialog({ open, mode, parentName, form, saving, onChange, onSave, onClose }: NodeDialogProps) {
     const [newDoc, setNewDoc] = useState("");
+    const [uploadingIdx, setUploadingIdx] = useState<number | null>(null);
 
     function addDoc() {
         const trimmed = newDoc.trim();
-        if (!trimmed || form.requiredDocuments.includes(trimmed)) return;
-        onChange({ requiredDocuments: [...form.requiredDocuments, trimmed] });
+        if (!trimmed || form.documentRules.some((d) => d.label === trimmed)) return;
+        onChange({ documentRules: [...form.documentRules, { label: trimmed, optional: false }] });
         setNewDoc("");
     }
 
-    function removeDoc(doc: string) {
-        onChange({ requiredDocuments: form.requiredDocuments.filter((d) => d !== doc) });
+    function removeDoc(label: string) {
+        onChange({ documentRules: form.documentRules.filter((d) => d.label !== label) });
+    }
+
+    function patchRule(idx: number, patch: Partial<DocumentRule>) {
+        onChange({
+            documentRules: form.documentRules.map((d, i) => (i === idx ? { ...d, ...patch } : d)),
+        });
+    }
+
+    async function uploadConsentPdf(idx: number, file: File | null) {
+        if (!file) return;
+        setUploadingIdx(idx);
+        try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const res = await fetch("/api/admin/catalog/consent-upload", { method: "POST", body: fd });
+            const data = await res.json();
+            if (!res.ok) {
+                toast.error(data.error ?? "Consent PDF upload failed");
+                return;
+            }
+            patchRule(idx, { consentPdfS3Key: data.s3Key });
+            toast.success("Consent PDF attached");
+        } catch {
+            toast.error("Upload failed. Please try again.");
+        } finally {
+            setUploadingIdx(null);
+        }
     }
 
     return (
@@ -362,16 +393,76 @@ function NodeDialog({ open, mode, parentName, form, saving, onChange, onSave, on
                                         Add
                                     </Button>
                                 </div>
-                                <div className="flex flex-wrap gap-1.5 mt-2">
-                                    {form.requiredDocuments.map((doc) => (
-                                        <Badge key={doc} variant="secondary" className="gap-1">
-                                            {doc}
-                                            <button onClick={() => removeDoc(doc)} className="ml-0.5 hover:text-destructive">
-                                                <X className="w-3 h-3" />
-                                            </button>
-                                        </Badge>
+                                <div className="space-y-2 mt-2">
+                                    {form.documentRules.map((rule, idx) => (
+                                        <div key={rule.label} className="rounded-lg border p-3 space-y-2.5">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <span className="text-sm font-medium truncate">{rule.label}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removeDoc(rule.label)}
+                                                    className="text-muted-foreground hover:text-destructive shrink-0"
+                                                    title="Remove document"
+                                                >
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div>
+                                                    <p className="text-xs font-medium">Allow consent instead of upload</p>
+                                                    <p className="text-[11px] text-muted-foreground">
+                                                        Customer can acknowledge a consent if they can&apos;t share this file
+                                                    </p>
+                                                </div>
+                                                <Switch
+                                                    checked={rule.optional}
+                                                    onCheckedChange={(v) => patchRule(idx, { optional: v })}
+                                                />
+                                            </div>
+
+                                            {rule.optional && (
+                                                <div className="space-y-2 pt-1">
+                                                    <Textarea
+                                                        value={rule.consentText ?? ""}
+                                                        onChange={(e) => patchRule(idx, { consentText: e.target.value })}
+                                                        placeholder="Consent wording the customer reads and acknowledges, e.g. 'If I don't share this document, I authorise TaxKosh to use the details my bank reports for validation.'"
+                                                        rows={3}
+                                                        className="text-sm"
+                                                    />
+                                                    <div className="flex items-center gap-2">
+                                                        <label className="inline-flex">
+                                                            <input
+                                                                type="file"
+                                                                accept=".pdf"
+                                                                className="hidden"
+                                                                onChange={(e) => uploadConsentPdf(idx, e.target.files?.[0] ?? null)}
+                                                            />
+                                                            <span className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md border text-xs cursor-pointer hover:bg-muted">
+                                                                {uploadingIdx === idx ? (
+                                                                    <><Loader2 className="w-3 h-3 animate-spin" /> Uploading…</>
+                                                                ) : rule.consentPdfS3Key ? (
+                                                                    "Replace consent PDF"
+                                                                ) : (
+                                                                    "Attach consent PDF (optional)"
+                                                                )}
+                                                            </span>
+                                                        </label>
+                                                        {rule.consentPdfS3Key && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => patchRule(idx, { consentPdfS3Key: undefined })}
+                                                                className="text-[11px] text-muted-foreground hover:text-destructive"
+                                                            >
+                                                                remove PDF
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
                                     ))}
-                                    {form.requiredDocuments.length === 0 && (
+                                    {form.documentRules.length === 0 && (
                                         <p className="text-xs text-muted-foreground">No documents added yet</p>
                                     )}
                                 </div>
@@ -436,7 +527,11 @@ export function CatalogTreeClient({ initialNodes }: { initialNodes: CatalogNode[
             isLeaf: node.isLeaf,
             price: node.price,
             description: node.description ?? "",
-            requiredDocuments: node.requiredDocuments,
+            // Prefer stored rules; fall back to deriving from labels for legacy nodes.
+            documentRules:
+                node.documentRules && node.documentRules.length > 0
+                    ? node.documentRules
+                    : node.requiredDocuments.map((label) => ({ label, optional: false })),
             slaHours: node.slaHours,
             status: node.status as "active" | "inactive",
         });
@@ -450,11 +545,17 @@ export function CatalogTreeClient({ initialNodes }: { initialNodes: CatalogNode[
     async function handleSave() {
         setSaving(true);
         try {
+            // requiredDocuments (labels) is derived from the rule editor so every
+            // existing label-based reader keeps working; documentRules carries the
+            // consent metadata. A rule marked optional but with no consent content is
+            // just a normal required doc.
+            const requiredDocuments = form.documentRules.map((r) => r.label);
+            const payload = { ...form, requiredDocuments };
             if (dialogMode === "create") {
                 const res = await fetch("/api/admin/catalog", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ ...form, parentId: activeParentId }),
+                    body: JSON.stringify({ ...payload, parentId: activeParentId }),
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -467,7 +568,7 @@ export function CatalogTreeClient({ initialNodes }: { initialNodes: CatalogNode[
                 const res = await fetch(`/api/admin/catalog/${editingNode.id}`, {
                     method: "PATCH",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(form),
+                    body: JSON.stringify(payload),
                 });
                 const data = await res.json();
                 if (!res.ok) {
@@ -529,7 +630,7 @@ export function CatalogTreeClient({ initialNodes }: { initialNodes: CatalogNode[
                         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                             <FolderOpen className="w-10 h-10 mb-3 opacity-30" />
                             <p className="text-sm">No categories yet.</p>
-                            <p className="text-xs mt-1">Click "Add root category" to get started.</p>
+                            <p className="text-xs mt-1">Click &quot;Add root category&quot; to get started.</p>
                         </div>
                     ) : (
                         rootNodes.map((node) => (
@@ -569,7 +670,7 @@ export function CatalogTreeClient({ initialNodes }: { initialNodes: CatalogNode[
             <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete "{deleteTarget?.name}"?</AlertDialogTitle>
+                        <AlertDialogTitle>Delete &quot;{deleteTarget?.name}&quot;?</AlertDialogTitle>
                         <AlertDialogDescription>
                             This node will be permanently deleted. You cannot delete a node that has children or
                             existing service requests.

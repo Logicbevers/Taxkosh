@@ -77,6 +77,7 @@ export default async function ServiceDetailPage({
                     serviceName={service.name}
                     price={service.price}
                     requiredDocuments={service.requiredDocuments}
+                    documentRules={service.documentRules}
                     isSignedIn={isSignedIn}
                     returnPath={`/services/${parentCategory.slug}/${p.sub}/${p.service}`}
                     autoCheckout={autoCheckout}
