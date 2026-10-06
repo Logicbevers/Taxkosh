@@ -1,0 +1,4 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "if [ \"$VERCEL_ENV\" = \"production\" ]; then DIRECT_URL=\"${DIRECT_URL:-$DATABASE_URL}\" npx prisma db push --skip-generate; fi && npm run build"
+}
