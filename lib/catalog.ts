@@ -59,7 +59,9 @@ export const getPublicCategories = cache(async () => {
 
     return cats
         .map((c) => {
-            const subsWithServices = c.children.filter((s) => s.children.length > 0);
+            const subsWithServices = c.children.filter((s) => !s.isLeaf && s.children.length > 0);
+            // Services placed directly under the category (leaf at depth 1, no sub).
+            const directServiceCount = c.children.filter((s) => s.isLeaf && s.status === ACTIVE).length;
             return {
                 id: c.id,
                 name: c.name,
@@ -69,10 +71,14 @@ export const getPublicCategories = cache(async () => {
                 // _count kept for the services index page's "N types" label.
                 subCategories: subsWithServices.map((s) => ({ id: s.id, name: s.name, slug: s.slug })),
                 _count: { subCategories: subsWithServices.length },
+                // Visible when the category has ANY buyable service — under a
+                // sub-category OR directly beneath it. The old filter only counted
+                // the former, so a category with a direct service was hidden here
+                // even though its detail page listed it.
+                hasServices: subsWithServices.length > 0 || directServiceCount > 0,
             };
         })
-        // Hide empty categories (no sub with a buyable service) from end users.
-        .filter((c) => c._count.subCategories > 0);
+        .filter((c) => c.hasServices);
 });
 
 export const getPublicCategoryBySlug = cache(async (slug: string) => {

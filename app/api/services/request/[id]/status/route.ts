@@ -22,7 +22,7 @@ const updateStatusSchema = z.object({
 
 export async function POST(
     req: Request,
-    { params }: any
+    { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const resolvedParams = await params;
